@@ -33,3 +33,22 @@ export async function deleteAccount(_: FormState, fd: FormData): Promise<FormSta
   await supabase.auth.signOut().catch(() => {});
   redirect("/?cuenta=eliminada");
 }
+
+/** Cambio de contraseña (también es el destino del enlace de recuperación). Al cambiarla se cierran las demás sesiones abiertas. */
+export async function changePassword(_: FormState, fd: FormData): Promise<FormState> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const password = String(fd.get("password") ?? ""), confirm = String(fd.get("confirm") ?? "");
+  if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
+  if (password.length > 72) return { error: "La contraseña no puede superar los 72 caracteres." };
+  if (password !== confirm) return { error: "Las contraseñas no coinciden." };
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    if (/same|different|igual/i.test(error.message)) return { error: "La nueva contraseña debe ser distinta de la actual." };
+    if (/weak|short|characters/i.test(error.message)) return { error: "Esa contraseña es muy débil. Usa una más larga y variada." };
+    return { error: "No se pudo cambiar la contraseña. Inténtalo de nuevo." };
+  }
+  await supabase.auth.signOut({ scope: "others" }).catch(() => {});
+  return { ok: true };
+}

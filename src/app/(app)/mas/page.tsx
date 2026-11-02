@@ -10,7 +10,7 @@ export default async function Mas() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: p } = await supabase.from("profiles").select("role, full_name").eq("id", user!.id).single();
-  const items = [["/cuenta/suscripcion", "Mi plan"], ["/cuenta/datos", "Mis datos (exportar y eliminar)"], ["/asistente", "Asistente (pregúntale a tus datos)"], ["/importar", "Importar y escanear"], ["/compartidos", "Gastos compartidos"], ["/correo", "Correo"], ["/suscripciones", "Suscripciones detectadas"], ["/calendario", "Calendario de vencimientos"], ["/presupuestos", "Presupuestos"], ["/proyectos", "Proyectos"], ["/deudas", "Deudas"], ["/patrimonio", "Patrimonio"], ["/proyeccion", "Proyección de caja"], ["/salud", "Salud financiera"], ["/cuentas", "Cuentas y saldos"], ["/recurrentes", "Fijos y recurrentes"], ["/categorias", "Categorías"]];
+  const items = [["/cuenta/suscripcion", "Mi plan"], ["/cuenta/datos", "Mis datos (exportar y eliminar)"], ["/cuenta/clave", "Cambiar contraseña"], ["/asistente", "Asistente (pregúntale a tus datos)"], ["/importar", "Importar y escanear"], ["/compartidos", "Gastos compartidos"], ["/correo", "Correo"], ["/suscripciones", "Suscripciones detectadas"], ["/calendario", "Calendario de vencimientos"], ["/presupuestos", "Presupuestos"], ["/proyectos", "Proyectos"], ["/deudas", "Deudas"], ["/patrimonio", "Patrimonio"], ["/proyeccion", "Proyección de caja"], ["/salud", "Salud financiera"], ["/cuentas", "Cuentas y saldos"], ["/recurrentes", "Fijos y recurrentes"], ["/categorias", "Categorías"]];
   if (p?.role === "super_admin") items.push(["/admin", "Administración"]);
   return (
     <div className="space-y-4">

@@ -9,6 +9,7 @@ export default function Home() {
         <Link href="/registro" className="rounded-xl bg-brand py-3.5 font-semibold text-brand-fg">Crear cuenta</Link>
         <Link href="/login" className="rounded-xl border border-line py-3.5 font-semibold">Ingresar</Link>
         <Link href="/precios" className="py-2 text-sm font-semibold text-brand">Ver planes y precios</Link>
+        <p className="flex justify-center gap-4 pt-2 text-xs text-muted"><Link href="/privacidad" className="underline">Privacidad</Link><Link href="/terminos" className="underline">Términos</Link></p>
       </div>
     </main>
   );

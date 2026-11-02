@@ -40,6 +40,7 @@ export default async function Precios() {
         );
       })}
       <p className="text-center text-xs text-muted">Precios en pesos colombianos. Pagos seguros con Wompi. La prueba gratis no pide tarjeta.</p>
+      <p className="flex justify-center gap-4 text-xs text-muted"><Link href="/privacidad" className="underline">Privacidad</Link><Link href="/terminos" className="underline">Términos</Link></p>
     </main>
   );
 }

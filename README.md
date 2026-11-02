@@ -9,6 +9,7 @@ Stack: **Next.js 15 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgr
 npm install
 cp .env.example .env.local      # completa las variables
 npm run dev
+node scripts/smoke.mjs URL      # recorrido en Chromium móvil (CSP, hidratación, login, redirecciones); requiere Playwright
 npm test                        # lógica financiera, validaciones, importación, capa de IA y endpoints
 scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgres local
 ```
@@ -33,6 +34,12 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 - **Outlook**: Microsoft Entra ID → registro de aplicación (cuentas personales y de trabajo) → redirección web `{APP_URL}/api/email/microsoft/callback` → permisos delegados `Mail.Read`, `User.Read`, `offline_access` → secreto de cliente.
 - **IMAP**: solo puerto 993 (TLS) y servidores públicos, con contraseña de aplicación. POP3 no se soporta.
 - Variables: `GOOGLE_CLIENT_ID/SECRET`, `MICROSOFT_CLIENT_ID/SECRET`, `OAUTH_STATE_SECRET`, `TOKEN_ENCRYPTION_KEY` (ver `.env.example`). El cron `/api/cron/email-sync` corre cada hora.
+
+### Páginas legales
+`/privacidad` y `/terminos` son un **borrador sin revisión legal** y muestran un aviso mientras tanto; los puntos que requieren decisión salen resaltados. Completa `NEXT_PUBLIC_LEGAL_NAME/NIT/ADDRESS/EMAIL` y, cuando un abogado los apruebe, pon `NEXT_PUBLIC_LEGAL_REVIEWED=true`.
+
+### Seguridad de la aplicación
+CSP con nonce por petición (middleware), HSTS, X-Frame-Options, nosniff, Referrer-Policy y Permissions-Policy. Si agregas analítica, mapas o widgets de terceros, hay que ampliar la CSP en `src/lib/csp.ts`. Las páginas son dinámicas a propósito (un nonce por petición no admite HTML estático).
 
 ## Diseño clave
 - **Montos como enteros** (centavos). Nunca floats. Ver `src/lib/finance/`.

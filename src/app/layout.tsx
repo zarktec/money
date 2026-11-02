@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Money", statusBarStyle: "default" },
 };
+// La CSP usa un nonce distinto en cada petición: las páginas no pueden generarse de forma estática (sus scripts no tendrían nonce y se bloquearían).
+export const dynamic = "force-dynamic";
+
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#059669" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
