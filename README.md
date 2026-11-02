@@ -15,7 +15,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 
 ### Base de datos
 1. Crea un proyecto en Supabase.
-2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, y luego `0002_default_account.sql`, `0003_planning.sql`, `0004_debts_networth.sql`, `0005_imports_ai.sql` y `0006_email.sql` (SQL Editor o `supabase db push`).
+2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, y luego `0002_default_account.sql`, `0003_planning.sql`, `0004_debts_networth.sql`, `0005_imports_ai.sql`, `0006_email.sql` y `0007_shared.sql` (SQL Editor o `supabase db push`).
 3. Registra tu usuario en la app y conviértelo en super admin:
    ```sql
    update profiles set role = 'super_admin' where id = (select id from auth.users where email = 'tu@correo.com');
@@ -40,6 +40,8 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 - **Disponible para gastar** = ingresos − gastos − provisiones − aportes a metas − fijos pendientes.
 - **Metas**: cuota mensual = restante / meses hasta la fecha, recalculada con lo ya ahorrado.
 - **Secretos de correo**: cifrados con AES-256-GCM atados a su dueño, y el cliente no puede leer esa columna (permiso por columna en la base de datos).
+- **Asistente**: el modelo solo puede invocar consultas de solo lectura predefinidas (con argumentos validados) que se ejecutan con la sesión del usuario; no escribe SQL ni modifica datos. Cada pregunta consume 1 del cupo mensual de IA.
+- **Gastos compartidos**: las partes de cada gasto se validan en la base de datos (función SQL) y las escrituras directas están bloqueadas.
 - **Bandeja de revisión**: lo detectado automáticamente (correo/OCR/banco) entra como `pending_review`.
 - **Seguridad**: RLS en todas las tablas; el precio del plan se lee siempre en servidor; el webhook de Wompi verifica checksum, monto e idempotencia; `/admin` responde 404 a quien no es super admin.
 - **Privacidad**: consentimiento explícito (Ley 1581 de 2012) guardado en `profiles.data_consent_at`.
@@ -56,7 +58,8 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 | 4 | Deudas con simulador avalancha vs. bola de nieve, patrimonio neto, proyección de caja a 3/6/12 meses y puntaje de salud financiera | ✅ |
 | 5 | Importar extractos (CSV gratis, PDF con IA), foto de recibo y entrada por texto o voz, con vista previa, duplicados, deshacer y límite de IA por plan | ✅ |
 | 6 | Correo (Gmail, Outlook, IMAP) con filtro previo, IA, deduplicación, bandeja de revisión, reglas aprendidas y detección de suscripciones | ✅ |
-| 7 | Open banking (Belvo/Prometeo), gastos compartidos, asistente conversacional | ⏳ |
+| 7 | Gastos compartidos y asistente conversacional | ✅ |
+| 7 | Open banking (Belvo/Prometeo) y multimoneda | ⏳ requiere contrato con el agregador |
 | 8 | Página de precios, límites por plan, renovación automática con fuente de pago Wompi | ⏳ |
 
 > Wompi: hoy el cobro es por checkout (pago único por periodo). La renovación automática requiere crear una *fuente de pago* tokenizada; está en la fase 8.
