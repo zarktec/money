@@ -1,12 +1,24 @@
 import { formatMoney } from "@/lib/finance/money";
 
+/** «Ilimitado» se guarda como un tope muy alto: así la base de datos y el código (que comparan contra un número) funcionan igual. */
+export const UNLIMITED = 1_000_000;
+
+/** Límites que el administrador puede configurar por plan, en el orden en que se muestran. */
+export const LIMIT_FIELDS = [
+  { key: "accounts", label: "Cuentas", hint: "Cuentas de dinero (efectivo, banco, tarjeta…)" },
+  { key: "projects", label: "Proyectos", hint: "Proyectos activos" },
+  { key: "goals", label: "Metas de ahorro", hint: "Metas activas al mismo tiempo" },
+  { key: "email_connections", label: "Cuentas de correo", hint: "Gmail, Outlook o IMAP conectadas. 0 = sin lectura de correo" },
+  { key: "ai_requests_month", label: "Consultas con IA al mes", hint: "Recibos, extractos, correo y asistente. Tienen costo por uso" },
+] as const;
+
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const LABELS: Record<string, (n: number) => string | null> = {
-  accounts: (n) => plural(n, "cuenta", "cuentas"),
-  projects: (n) => plural(n, "proyecto", "proyectos"),
-  goals: (n) => plural(n, "meta de ahorro activa", "metas de ahorro activas"),
-  email_connections: (n) => (n > 0 ? `Lectura de correo: ${plural(n, "cuenta", "cuentas")} (Gmail, Outlook o IMAP)` : null),
-  ai_requests_month: (n) => `${n} consultas con IA al mes (recibos, extractos, correo y asistente)`,
+  accounts: (n) => (n >= UNLIMITED ? "Cuentas ilimitadas" : plural(n, "cuenta", "cuentas")),
+  projects: (n) => (n >= UNLIMITED ? "Proyectos ilimitados" : plural(n, "proyecto", "proyectos")),
+  goals: (n) => (n >= UNLIMITED ? "Metas de ahorro ilimitadas" : plural(n, "meta de ahorro activa", "metas de ahorro activas")),
+  email_connections: (n) => (n >= UNLIMITED ? "Lectura de correo: cuentas ilimitadas (Gmail, Outlook o IMAP)" : n > 0 ? `Lectura de correo: ${plural(n, "cuenta", "cuentas")} (Gmail, Outlook o IMAP)` : null),
+  ai_requests_month: (n) => (n >= UNLIMITED ? "Consultas con IA ilimitadas (recibos, extractos, correo y asistente)" : `${n} consultas con IA al mes (recibos, extractos, correo y asistente)`),
 };
 
 /** Límites de un plan en frases para mostrar. Las claves desconocidas se ignoran; 0 en correo no se muestra. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeLimits, priceLabel, yearlySavingsPercent } from "./plans";
+import { UNLIMITED, describeLimits, priceLabel, yearlySavingsPercent } from "./plans";
 
 describe("plans", () => {
   it("describe límites en español, singular/plural y omite correo en 0", () => {
@@ -8,6 +8,9 @@ describe("plans", () => {
     expect(describeLimits({ email_connections: 2 })).toEqual(["Lectura de correo: 2 cuentas (Gmail, Outlook o IMAP)"]);
     expect(describeLimits({ accounts: "x", otra: 5, goals: -1 })).toEqual([]);
     expect(describeLimits(null)).toEqual([]);
+  });
+  it("un límite ilimitado se muestra como «ilimitado», no como un número enorme", () => {
+    expect(describeLimits({ accounts: UNLIMITED, ai_requests_month: UNLIMITED })).toEqual(["Cuentas ilimitadas", "Consultas con IA ilimitadas (recibos, extractos, correo y asistente)"]);
   });
   it("precio y ahorro anual", () => {
     expect(priceLabel(0, "month")).toBe("Gratis");
