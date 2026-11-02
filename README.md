@@ -9,13 +9,13 @@ Stack: **Next.js 15 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgr
 npm install
 cp .env.example .env.local      # completa las variables
 npm run dev
-npm test                        # lógica financiera, validaciones y firmas de Wompi
+npm test                        # lógica financiera, validaciones, importación, capa de IA y endpoints
 scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgres local
 ```
 
 ### Base de datos
 1. Crea un proyecto en Supabase.
-2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, `supabase/migrations/0002_default_account.sql`, `supabase/migrations/0003_planning.sql` y `supabase/migrations/0004_debts_networth.sql` (SQL Editor o `supabase db push`).
+2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, `supabase/migrations/0002_default_account.sql`, `supabase/migrations/0003_planning.sql` `supabase/migrations/0004_debts_networth.sql` y `supabase/migrations/0005_imports_ai.sql` (SQL Editor o `supabase db push`).
 3. Registra tu usuario en la app y conviértelo en super admin:
    ```sql
    update profiles set role = 'super_admin' where id = (select id from auth.users where email = 'tu@correo.com');
@@ -47,7 +47,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 | 2 | Cuentas, ingresos, egresos, recurrentes con provisión, transferencias, categorías propias, captura rápida "+", movimientos con filtros y bandeja de revisión | ✅ |
 | 3 | Metas de ahorro con aportes, proyectos, presupuestos con alertas, calendario de vencimientos (pagar/omitir) y recordatorios push | ✅ |
 | 4 | Deudas con simulador avalancha vs. bola de nieve, patrimonio neto, proyección de caja a 3/6/12 meses y puntaje de salud financiera | ✅ |
-| 5 | Importar extractos (CSV/PDF) y foto de recibo con IA | ⏳ |
+| 5 | Importar extractos (CSV gratis, PDF con IA), foto de recibo y entrada por texto o voz, con vista previa, duplicados, deshacer y límite de IA por plan | ✅ |
 | 6 | Correo (Gmail/Outlook/IMAP) + bandeja de revisión + reglas aprendidas | ⏳ |
 | 7 | Open banking (Belvo/Prometeo), gastos compartidos, asistente conversacional | ⏳ |
 | 8 | Página de precios, límites por plan, renovación automática con fuente de pago Wompi | ⏳ |
