@@ -79,6 +79,12 @@ describe("extractTransactions", () => {
     await expect(extractTransactions(fake({ stop_reason: "max_tokens", parsed_output: null }), input)).rejects.toMatchObject({ code: "truncated" });
     await expect(extractTransactions(fake({ stop_reason: "end_turn", parsed_output: null }), input)).rejects.toBeInstanceOf(AiError);
   });
+  it("modo correo: delimita el correo, fija la fecha del mensaje como 'hoy' e instruye a ignorar promociones y pagos futuros", () => {
+    const c = buildContent({ mode: "email", from: "Netflix <info@netflix.com>", subject: "Pago exitoso", body: "Se cobró $38.900", today: "2026-10-05", categories: [] });
+    const t = (c[0] as { text: string }).text;
+    expect(t).toContain("<correo>"); expect(t).toContain("De: Netflix"); expect(t).toContain("Asunto: Pago exitoso"); expect(t).toContain("Fecha: 2026-10-05");
+    expect(t).toMatch(/promociones/); expect(t).toMatch(/pagos futuros/); expect(t).toMatch(/ya ocurrieron/);
+  });
   it("arma los bloques de contenido por modo: texto delimitado, imagen y PDF base64", () => {
     expect(buildContent(input)[0]).toMatchObject({ type: "text" });
     expect((buildContent(input)[0] as { text: string }).text).toContain("<texto_del_usuario>");

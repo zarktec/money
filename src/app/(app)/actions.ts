@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { accountSchema, categorySchema, ruleSchema, txSchema, type FormState } from "@/lib/forms/schemas";
 import { monthlyProvision, nextOccurrence, type Frequency } from "@/lib/finance/recurrence";
+import { learnMerchantRule } from "@/lib/learn";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -48,8 +49,10 @@ export async function saveTransaction(_: FormState, fd: FormData): Promise<FormS
   };
 
   if (id) {
+    const { data: prev } = await supabase.from("transactions").select("source").eq("id", id).maybeSingle();
     const { error } = await supabase.from("transactions").update({ ...row, status: "confirmed" }).eq("id", id);
     if (error) return { error: "No se pudo guardar" };
+    if (v.type === "expense" && prev && !["manual", "recurring"].includes(prev.source)) await learnMerchantRule(supabase, userId, v.description, row.category_id);
   } else {
     const { data: tx, error } = await supabase.from("transactions").insert({ ...row, user_id: userId, source: "manual" }).select("id").single();
     if (error || !tx) return { error: "No se pudo guardar" };
@@ -71,8 +74,18 @@ export async function saveTransaction(_: FormState, fd: FormData): Promise<FormS
 }
 
 export async function confirmTransaction(fd: FormData) {
+  const { supabase, userId } = await ctx();
+  const id = String(fd.get("id"));
+  const { data: t } = await supabase.from("transactions").select("description, category_id, source, type").eq("id", id).maybeSingle();
+  await supabase.from("transactions").update({ status: "confirmed" }).eq("id", id);
+  if (t && t.type === "expense" && !["manual", "recurring"].includes(t.source)) await learnMerchantRule(supabase, userId, t.description, t.category_id);
+  refresh();
+}
+
+/** Confirma de una vez todo lo pendiente de revisión (RLS limita a los del usuario). No aprende reglas: no se revisó categoría por categoría. */
+export async function confirmAllPending() {
   const { supabase } = await ctx();
-  await supabase.from("transactions").update({ status: "confirmed" }).eq("id", String(fd.get("id")));
+  await supabase.from("transactions").update({ status: "confirmed" }).eq("status", "pending_review");
   refresh();
 }
 

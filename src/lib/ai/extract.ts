@@ -12,7 +12,9 @@ export type AiClient = { messages: { create: Anthropic["messages"]["create"] } }
 export type ExtractInput =
   | { mode: "text"; text: string; today: string; categories: string[] }
   | { mode: "receipt"; mediaType: "image/jpeg" | "image/png" | "image/webp"; base64: string; today: string; categories: string[] }
-  | { mode: "statement"; pdfBase64: string; today: string; categories: string[] };
+  | { mode: "statement"; pdfBase64: string; today: string; categories: string[] }
+  // Para un correo, `today` es la fecha del correo (así "hoy" dentro del mensaje se resuelve bien).
+  | { mode: "email"; from: string; subject: string; body: string; today: string; categories: string[] };
 
 /** El modelo es decisión del dueño de la app: por defecto el recomendado por Anthropic; se puede abaratar con ANTHROPIC_MODEL. */
 export const aiModel = () => process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
@@ -20,6 +22,7 @@ export const aiModel = () => process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
 export function buildContent(i: ExtractInput): Anthropic.ContentBlockParam[] {
   const instruction = { type: "text" as const, text: MODE_INSTRUCTIONS[i.mode] };
   if (i.mode === "text") return [{ type: "text", text: `${instruction.text}\n\n<texto_del_usuario>\n${i.text}\n</texto_del_usuario>` }];
+  if (i.mode === "email") return [{ type: "text", text: `${instruction.text}\n\n<correo>\nDe: ${i.from}\nAsunto: ${i.subject}\nFecha: ${i.today}\n\n${i.body}\n</correo>` }];
   if (i.mode === "receipt") return [{ type: "image", source: { type: "base64", media_type: i.mediaType, data: i.base64 } }, instruction];
   return [{ type: "document", source: { type: "base64", media_type: "application/pdf", data: i.pdfBase64 } }, instruction];
 }

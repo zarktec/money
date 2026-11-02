@@ -15,7 +15,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 
 ### Base de datos
 1. Crea un proyecto en Supabase.
-2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, `supabase/migrations/0002_default_account.sql`, `supabase/migrations/0003_planning.sql`, `supabase/migrations/0004_debts_networth.sql` y `supabase/migrations/0005_imports_ai.sql` (SQL Editor o `supabase db push`).
+2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, y luego `0002_default_account.sql`, `0003_planning.sql`, `0004_debts_networth.sql`, `0005_imports_ai.sql` y `0006_email.sql` (SQL Editor o `supabase db push`).
 3. Registra tu usuario en la app y conviértelo en super admin:
    ```sql
    update profiles set role = 'super_admin' where id = (select id from auth.users where email = 'tu@correo.com');
@@ -28,11 +28,18 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 4. En Wompi (Desarrolladores → Eventos) configura la URL de eventos: `https://TU_DOMINIO/api/wompi/webhook`.
 5. En Supabase → Auth → URL Configuration agrega `https://TU_DOMINIO/auth/callback`.
 
+### Correo (fase 6)
+- **Gmail**: Google Cloud Console → habilita *Gmail API* → pantalla de consentimiento → alcance `gmail.readonly` → credenciales OAuth «Aplicación web» con redirección `{APP_URL}/api/email/google/callback`. ⚠️ Mientras la app esté en modo *Testing*, Google **vence los refresh tokens a los 7 días** y limita a 100 usuarios de prueba: para producción hace falta publicarla y pasar la verificación de seguridad (CASA) por usar un alcance restringido.
+- **Outlook**: Microsoft Entra ID → registro de aplicación (cuentas personales y de trabajo) → redirección web `{APP_URL}/api/email/microsoft/callback` → permisos delegados `Mail.Read`, `User.Read`, `offline_access` → secreto de cliente.
+- **IMAP**: solo puerto 993 (TLS) y servidores públicos, con contraseña de aplicación. POP3 no se soporta.
+- Variables: `GOOGLE_CLIENT_ID/SECRET`, `MICROSOFT_CLIENT_ID/SECRET`, `OAUTH_STATE_SECRET`, `TOKEN_ENCRYPTION_KEY` (ver `.env.example`). El cron `/api/cron/email-sync` corre cada hora.
+
 ## Diseño clave
 - **Montos como enteros** (centavos). Nunca floats. Ver `src/lib/finance/`.
 - **Provisiones**: un pago anual/semestral/trimestral se divide en cuota mensual (`monthlyProvision`).
 - **Disponible para gastar** = ingresos − gastos − provisiones − aportes a metas − fijos pendientes.
 - **Metas**: cuota mensual = restante / meses hasta la fecha, recalculada con lo ya ahorrado.
+- **Secretos de correo**: cifrados con AES-256-GCM atados a su dueño, y el cliente no puede leer esa columna (permiso por columna en la base de datos).
 - **Bandeja de revisión**: lo detectado automáticamente (correo/OCR/banco) entra como `pending_review`.
 - **Seguridad**: RLS en todas las tablas; el precio del plan se lee siempre en servidor; el webhook de Wompi verifica checksum, monto e idempotencia; `/admin` responde 404 a quien no es super admin.
 - **Privacidad**: consentimiento explícito (Ley 1581 de 2012) guardado en `profiles.data_consent_at`.
@@ -48,7 +55,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 | 3 | Metas de ahorro con aportes, proyectos, presupuestos con alertas, calendario de vencimientos (pagar/omitir) y recordatorios push | ✅ |
 | 4 | Deudas con simulador avalancha vs. bola de nieve, patrimonio neto, proyección de caja a 3/6/12 meses y puntaje de salud financiera | ✅ |
 | 5 | Importar extractos (CSV gratis, PDF con IA), foto de recibo y entrada por texto o voz, con vista previa, duplicados, deshacer y límite de IA por plan | ✅ |
-| 6 | Correo (Gmail/Outlook/IMAP) + bandeja de revisión + reglas aprendidas | ⏳ |
+| 6 | Correo (Gmail, Outlook, IMAP) con filtro previo, IA, deduplicación, bandeja de revisión, reglas aprendidas y detección de suscripciones | ✅ |
 | 7 | Open banking (Belvo/Prometeo), gastos compartidos, asistente conversacional | ⏳ |
 | 8 | Página de precios, límites por plan, renovación automática con fuente de pago Wompi | ⏳ |
 

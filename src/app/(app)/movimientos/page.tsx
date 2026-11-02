@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { todayISO } from "@/lib/dates";
 import { Card } from "@/components/ui";
 import { formatMoney } from "@/lib/finance/money";
-import { confirmTransaction, deleteTransaction } from "../actions";
+import { confirmAllPending, confirmTransaction, deleteTransaction } from "../actions";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Movimientos" };
@@ -23,7 +23,7 @@ export default async function Movimientos({ searchParams }: { searchParams: Prom
 
   const supabase = await createClient();
   let q = supabase.from("transactions")
-    .select("id, type, amount_cents, occurred_on, description, status, source, account:accounts!transactions_account_id_fkey(name), category:expense_categories(name), income_type:income_types(name)")
+    .select("id, type, amount_cents, occurred_on, description, status, source, notes, account:accounts!transactions_account_id_fkey(name), category:expense_categories(name), income_type:income_types(name)")
     .gte("occurred_on", format(startOfMonth(month), "yyyy-MM-dd")).lte("occurred_on", format(endOfMonth(month), "yyyy-MM-dd"))
     .order("occurred_on", { ascending: false }).order("created_at", { ascending: false }).limit(300);
   if (tipo === "pending") q = q.eq("status", "pending_review");
@@ -45,6 +45,10 @@ export default async function Movimientos({ searchParams }: { searchParams: Prom
         {FILTERS.map(([v, l]) => <Link key={v} href={href(mes, v)} className={cn("whitespace-nowrap rounded-full px-4 py-2 text-sm", tipo === v ? "bg-brand text-brand-fg" : "border border-line")}>{l}</Link>)}
       </div>
 
+      {tipo === "pending" && !!rows?.length && (
+        <form action={confirmAllPending}><button className="h-11 w-full rounded-xl border border-brand font-semibold text-brand">Confirmar los {rows.length} movimientos</button></form>
+      )}
+
       {!rows?.length && <p className="py-10 text-center text-muted">No hay movimientos en este periodo.</p>}
 
       {[...groups.entries()].map(([day, items]) => (
@@ -57,7 +61,8 @@ export default async function Movimientos({ searchParams }: { searchParams: Prom
               <Card key={t.id} className={cn("flex items-center gap-3 p-3", t.status === "pending_review" && "border-amber-400")}>
                 <Link href={`/movimientos/${t.id}`} className="min-w-0 flex-1">
                   <p className="truncate font-medium">{label}</p>
-                  <p className="truncate text-xs text-muted">{one<Named>(t.account)?.name}{t.status === "pending_review" && " · por revisar"}</p>
+                  <p className="truncate text-xs text-muted">{one<Named>(t.account)?.name}{t.status === "pending_review" && ` · ${t.source === "email" ? "📧 del correo" : "por revisar"}`}</p>
+                  {t.status === "pending_review" && t.notes && <p className="truncate text-xs text-muted/80">{t.notes}</p>}
                 </Link>
                 <p className={cn("font-semibold tabular-nums", t.type === "income" ? "text-brand" : t.type === "expense" ? "text-danger" : "")}>{sign}{formatMoney(t.amount_cents)}</p>
                 {t.status === "pending_review" && <form action={confirmTransaction}><input type="hidden" name="id" value={t.id} /><button aria-label="Confirmar" className="grid size-10 place-items-center rounded-full bg-brand text-brand-fg">✓</button></form>}

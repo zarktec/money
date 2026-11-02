@@ -21,5 +21,6 @@ export function buildSystemPrompt(ctx: { today: string; categories: string[] }):
 export const MODE_INSTRUCTIONS = {
   text: "Extrae los movimientos que el usuario describe en el texto.",
   receipt: "Es la foto de un recibo o factura. Devuelve UNA sola transacción de tipo egreso con el total pagado, el comercio y la fecha del recibo. No listes los ítems individuales.",
+  email: "Es un correo recibido en el buzón del usuario. Extrae SOLO movimientos que ya ocurrieron y están confirmados (compra aprobada, cobro realizado, pago recibido, transferencia enviada o recibida, factura pagada). NO extraigas: promociones u ofertas, cotizaciones, recordatorios o avisos de pagos futuros, extractos o saldos, códigos de seguridad, ni correos personales. Un correo suele describir un solo movimiento; si no hay ninguno, devuelve transactions: [] y explica en notes. Si el correo no indica la fecha del movimiento, usa la fecha del correo.",
   statement: "Es un extracto bancario. Devuelve todos los movimientos: abonos/créditos como ingresos y débitos/cargos como egresos. Ignora saldos, totales, encabezados y pies de página.",
 } as const;
