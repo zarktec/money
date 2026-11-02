@@ -19,14 +19,15 @@ export default async function Precios() {
   const monthly = (plans ?? []).find((p) => p.interval === "month" && p.price_cents > 0);
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md space-y-4 px-4 py-8">
-      <header className="space-y-1 text-center"><h1 className="text-3xl font-bold">Planes y precios</h1><p className="text-muted">Empieza gratis. Mejora cuando lo necesites.</p></header>
+    <main className="mx-auto min-h-dvh max-w-5xl px-4 py-8 lg:py-14">
+      <header className="mb-6 space-y-1 text-center lg:mb-10"><h1 className="text-3xl font-bold tracking-tight lg:text-5xl">Planes y precios</h1><p className="text-muted">Empieza gratis. Mejora cuando lo necesites.</p></header>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:items-stretch">
       {(plans ?? []).map((p) => {
         const isFree = p.price_cents <= 0, mine = current.has(p.id) || (isFree && !(subs ?? []).length && !!user);
         const save = p.interval === "year" && monthly ? yearlySavingsPercent(monthly.price_cents, p.price_cents) : 0;
         const feats: string[] = Array.isArray(p.features) ? p.features : [];
         return (
-          <section key={p.id} className={`space-y-3 rounded-2xl border bg-card p-5 ${mine ? "border-brand" : "border-line"}`}>
+          <section key={p.id} className={`flex flex-col space-y-3 rounded-2xl border bg-card p-5 shadow-card lg:p-6 ${mine ? "border-brand ring-2 ring-brand/20" : "border-line"}`}>
             <div className="flex items-start justify-between gap-2"><div><h2 className="text-xl font-bold">{p.name}</h2>{p.description && <p className="text-sm text-muted">{p.description}</p>}</div>
               {mine && <span className="rounded-full bg-brand/10 px-2 py-1 text-xs font-semibold text-brand">Tu plan</span>}
               {!mine && save > 0 && <span className="rounded-full bg-brand/10 px-2 py-1 text-xs font-semibold text-brand">Ahorras {save}%</span>}</div>
@@ -39,8 +40,9 @@ export default async function Precios() {
           </section>
         );
       })}
-      <p className="text-center text-xs text-muted">Precios en pesos colombianos. Pagos seguros con Wompi. La prueba gratis no pide tarjeta.</p>
-      <p className="flex justify-center gap-4 text-xs text-muted"><Link href="/privacidad" className="underline">Privacidad</Link><Link href="/terminos" className="underline">Términos</Link></p>
+      </div>
+      <p className="mt-6 text-center text-xs text-muted">Precios en pesos colombianos. Pagos seguros con Wompi. La prueba gratis no pide tarjeta.</p>
+      <p className="mt-2 flex justify-center gap-4 text-xs text-muted"><Link href="/privacidad" className="underline">Privacidad</Link><Link href="/terminos" className="underline">Términos</Link></p>
     </main>
   );
 }

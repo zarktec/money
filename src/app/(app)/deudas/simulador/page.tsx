@@ -35,7 +35,7 @@ export default async function Simulador({ searchParams }: { searchParams: Promis
             <div className="flex gap-2"><input id="extra" name="extra" defaultValue={sp.extra ?? ""} inputMode="decimal" placeholder="$ 0" className="h-12 min-w-0 flex-1 rounded-xl border border-line bg-card px-4 outline-none focus:border-brand" />
               <button className="h-12 rounded-xl bg-brand px-5 font-semibold text-brand-fg">Simular</button></div>
           </form>
-          {noMin && <p className="mt-2 text-xs text-amber-600">Hay deudas sin cuota mensual: solo se pagarán con el dinero extra.</p>}
+          {noMin && <p className="mt-2 text-xs text-warn">Hay deudas sin cuota mensual: solo se pagarán con el dinero extra.</p>}
         </Card>
 
         {best && !best.neverPaid && baseline && !baseline.neverPaid && extra > 0 && (

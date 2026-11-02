@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { selectAll } from "@/lib/db-page";
-import { Card } from "@/components/ui";
+import { Card, PageHeader, Stat } from "@/components/ui";
+import { HeartPulse, Scale, TrendingUp } from "lucide-react";
 import { formatMoney } from "@/lib/finance/money";
 import { monthlyProvision, type Frequency } from "@/lib/finance/recurrence";
 import { goalProgress } from "@/lib/finance/savings";
@@ -54,45 +55,71 @@ export default async function Inicio() {
 
   const soon = upcomingEvents((rules ?? []) as RuleLite[], today, addDaysISO(today, 7), 3).slice(0, 4);
 
+  const spentPct = income > 0 ? Math.min(100, Math.round((expense / income) * 100)) : expense > 0 ? 100 : 0;
+  const rate = savingsRate(income, expense);
+  const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/Bogota" }).format(new Date()));
+  const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+  const monthName = new Date(today + "T12:00:00").toLocaleDateString("es-CO", { month: "long", year: "numeric" });
+
+  const alerts = (
+    <>
+      {!!pending && <Link href="/movimientos?tipo=pending"><Card className="border-warn/50 bg-warn-soft transition hover:brightness-105"><p className="font-semibold text-warn">{pending} movimiento(s) por revisar</p><p className="text-sm text-muted">Confírmalos para que cuenten en tus cifras.</p></Card></Link>}
+      {budgetAlerts.length > 0 && <Link href="/presupuestos"><Card className={over ? "border-danger/50 bg-danger-soft" : "border-warn/50 bg-warn-soft"}>
+        <p className={`font-semibold ${over ? "text-danger" : "text-warn"}`}>{over > 0 && `${over} presupuesto(s) excedido(s)`}{over > 0 && warn > 0 && " · "}{warn > 0 && `${warn} cerca del límite`}</p><p className="text-sm text-muted">Revisa tus presupuestos del mes.</p></Card></Link>}
+    </>
+  );
+
   return (
-    <div className="space-y-4">
-      <header><p className="text-sm text-muted">Hola, {profile?.full_name?.split(" ")[0] ?? ""} 👋</p><h1 className="text-2xl font-bold">Tu mes</h1></header>
+    <div className="wide space-y-5">
+      <PageHeader title="Tu mes" subtitle={<>{greeting}{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""} · <span className="capitalize">{monthName}</span></>} />
 
-      <Card className="bg-brand text-brand-fg">
-        <p className="text-sm opacity-80">Disponible para gastar</p>
-        <p className="mt-1 text-4xl font-bold tabular-nums">{formatMoney(available, cur)}</p>
-        <p className="mt-2 text-xs opacity-80">Ingresos − gastos − provisiones − ahorro pendiente − fijos pendientes</p>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Card><p className="text-xs text-muted">Ingresos</p><p className="text-lg font-semibold tabular-nums">{formatMoney(income, cur)}</p></Card>
-        <Card><p className="text-xs text-muted">Egresos</p><p className="text-lg font-semibold tabular-nums">{formatMoney(expense, cur)}</p></Card>
-        <Card><p className="text-xs text-muted">Provisiones / mes</p><p className="text-lg font-semibold tabular-nums">{formatMoney(provisions, cur)}</p></Card>
-        <Card><p className="text-xs text-muted">Ahorro pendiente del mes</p><p className="text-lg font-semibold tabular-nums">{formatMoney(goalsMonthly, cur)}</p></Card>
-      </div>
-      <p className="text-center text-xs text-muted">Tasa de ahorro: {savingsRate(income, expense)}%</p>
-
-      {!!pending && <Link href="/movimientos?tipo=pending"><Card className="border-amber-400"><p className="font-semibold">{pending} movimiento(s) por revisar</p><p className="text-sm text-muted">Confírmalos para que cuenten en tus cifras.</p></Card></Link>}
-
-      {budgetAlerts.length > 0 && <Link href="/presupuestos"><Card className={over ? "border-danger" : "border-amber-400"}>
-        <p className="font-semibold">{over > 0 && `${over} presupuesto(s) excedido(s)`}{over > 0 && warn > 0 && " · "}{warn > 0 && `${warn} cerca del límite`}</p><p className="text-sm text-muted">Revisa tus presupuestos del mes.</p></Card></Link>}
-
-      <div className="grid grid-cols-3 gap-2 text-center text-sm font-semibold">
-        <Link href="/salud" className="rounded-xl border border-line bg-card py-3">Salud</Link>
-        <Link href="/proyeccion" className="rounded-xl border border-line bg-card py-3">Proyección</Link>
-        <Link href="/patrimonio" className="rounded-xl border border-line bg-card py-3">Patrimonio</Link>
-      </div>
-
-      <section className="space-y-2">
-        <div className="flex items-center justify-between"><h2 className="font-semibold">Próximos 7 días</h2><Link href="/calendario" className="text-sm font-semibold text-brand">Ver calendario</Link></div>
-        {!soon.length && <p className="text-sm text-muted">Nada por vencer esta semana.</p>}
-        {soon.map((e) => (
-          <Card key={`${e.ruleId}:${e.date}`} className="flex items-center justify-between gap-3 p-3">
-            <div className="min-w-0"><p className="truncate font-medium">{e.name}</p><p className="text-xs text-muted">{e.date === today ? "Hoy" : e.date}</p></div>
-            <p className={`font-semibold tabular-nums ${e.type === "income" ? "text-brand" : ""}`}>{formatMoney(e.amountCents, cur)}</p>
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <Card className="space-y-4 bg-brand text-brand-fg shadow-none lg:p-7">
+            <div>
+              <p className="text-sm opacity-80">Disponible para gastar</p>
+              <p className="mt-1 text-4xl font-bold tabular-nums tracking-tight lg:text-5xl">{formatMoney(available, cur)}</p>
+            </div>
+            <div className="space-y-1.5">
+              <div role="progressbar" aria-label="Gastado del ingreso del mes" aria-valuenow={spentPct} aria-valuemin={0} aria-valuemax={100} className="h-2 overflow-hidden rounded-full bg-black/20">
+                <div className="h-full rounded-full bg-white/90" style={{ width: `${spentPct}%` }} />
+              </div>
+              <p className="flex justify-between text-xs opacity-80"><span>Has gastado el {spentPct} % de tus ingresos</span><span>Ahorro: {rate} %</span></p>
+            </div>
+            <p className="text-xs opacity-70">Ingresos − gastos − provisiones − ahorro pendiente − fijos pendientes</p>
           </Card>
-        ))}
-      </section>
+
+          <div className="grid grid-cols-2 gap-3 lg:gap-4 2xl:grid-cols-4">
+            <Stat label="Ingresos" value={formatMoney(income, cur)} tone="good" />
+            <Stat label="Egresos" value={formatMoney(expense, cur)} />
+            <Stat label="Provisiones / mes" value={formatMoney(provisions, cur)} hint="Pagos no mensuales" />
+            <Stat label="Ahorro pendiente" value={formatMoney(goalsMonthly, cur)} hint="Aporte de este mes" />
+          </div>
+
+          <section className="space-y-2">
+            <div className="flex items-center justify-between"><h2 className="font-semibold">Próximos 7 días</h2><Link href="/calendario" className="text-sm font-semibold text-brand hover:underline">Ver calendario</Link></div>
+            {!soon.length && <Card className="py-6 text-center text-sm text-muted">Nada por vencer esta semana. 🎉</Card>}
+            <div className="grid gap-2 lg:grid-cols-2">
+              {soon.map((e) => (
+                <Card key={`${e.ruleId}:${e.date}`} className="flex items-center justify-between gap-3 p-3 lg:p-4">
+                  <div className="min-w-0"><p className="truncate font-medium">{e.name}</p><p className="text-xs text-muted">{e.date === today ? "Hoy" : e.date}</p></div>
+                  <p className={`font-semibold tabular-nums ${e.type === "income" ? "text-brand" : ""}`}>{formatMoney(e.amountCents, cur)}</p>
+                </Card>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <aside className="space-y-4">
+          {alerts}
+          <Card className="space-y-1 p-2 lg:p-2">
+            <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted">Análisis</p>
+            {([["/salud", "Salud financiera", HeartPulse], ["/proyeccion", "Proyección de caja", TrendingUp], ["/patrimonio", "Patrimonio", Scale]] as const).map(([h, l, I]) => (
+              <Link key={h} href={h} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition hover:bg-card-2"><I size={18} className="text-brand" aria-hidden />{l}<span className="ml-auto text-muted">›</span></Link>
+            ))}
+          </Card>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -1,14 +1,43 @@
 @import "tailwindcss";
 
-:root { --bg:#f6f7f9; --card:#fff; --fg:#0f172a; --muted:#64748b; --line:#e5e7eb; --brand:#059669; --brand-fg:#fff; --danger:#dc2626; }
+/* ---------- Tokens ----------
+   Claro: fondo suave con tarjetas blancas. Oscuro: capas azul-pizarra con verde menta como acento.
+   Todo color de la interfaz sale de aquí; no se escriben colores sueltos en los componentes. */
+:root {
+  --bg:#f4f6f5; --card:#ffffff; --card-2:#f8faf9; --fg:#0f1a17; --muted:#5b6b66; --line:#e3e9e6;
+  --brand:#047857; --brand-fg:#ffffff; --brand-soft:#e3f5ec;
+  --danger:#c62828; --danger-soft:#fdeaea; --warn:#b45309; --warn-soft:#fdf3dc;
+  --shadow: 0 1px 2px rgb(15 26 23 / .04), 0 4px 16px rgb(15 26 23 / .05);
+}
 @media (prefers-color-scheme: dark) {
-  :root { --bg:#0b1220; --card:#121a2b; --fg:#e5e7eb; --muted:#94a3b8; --line:#1f2a40; --brand:#10b981; --brand-fg:#052e22; }
+  :root {
+    --bg:#0a1110; --card:#111b19; --card-2:#0e1716; --fg:#e8efed; --muted:#93a39e; --line:#1f2e2b;
+    --brand:#34d399; --brand-fg:#04271c; --brand-soft:#10302a;
+    --danger:#f87171; --danger-soft:#3a1618; --warn:#fbbf24; --warn-soft:#33270b;
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 6px 20px rgb(0 0 0 / .25);
+  }
 }
 @theme inline {
-  --color-bg: var(--bg); --color-card: var(--card); --color-fg: var(--fg); --color-muted: var(--muted);
-  --color-line: var(--line); --color-brand: var(--brand); --color-brand-fg: var(--brand-fg); --color-danger: var(--danger);
+  --color-bg: var(--bg); --color-card: var(--card); --color-card-2: var(--card-2); --color-fg: var(--fg); --color-muted: var(--muted);
+  --color-line: var(--line); --color-brand: var(--brand); --color-brand-fg: var(--brand-fg); --color-brand-soft: var(--brand-soft);
+  --color-danger: var(--danger); --color-danger-soft: var(--danger-soft); --color-warn: var(--warn); --color-warn-soft: var(--warn-soft);
+  --shadow-card: var(--shadow);
 }
-html { -webkit-tap-highlight-color: transparent; }
-body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; text-rendering: optimizeLegibility; }
 .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
-input, select, textarea { font-size: 16px; } /* evita zoom automático en iOS */
+input, select, textarea { font-size: 16px; } /* evita el zoom automático en iOS */
+@media (min-width: 1024px) { input, select, textarea { font-size: 14px; } }
+
+/* Foco visible para teclado en todo elemento interactivo. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+::selection { background: var(--brand-soft); }
+
+/* Contenido de la app: una columna cómoda de leer; una página puede ocupar todo el ancho con la clase «wide». */
+.app-main > * { max-width: 46rem; }
+.app-main > .wide { max-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

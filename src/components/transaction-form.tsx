@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 type TxType = "expense" | "income" | "transfer";
 const TYPES: { v: TxType; label: string; cls: string }[] = [
-  { v: "expense", label: "Egreso", cls: "bg-red-500 text-white" },
+  { v: "expense", label: "Egreso", cls: "bg-danger text-white" },
   { v: "income", label: "Ingreso", cls: "bg-brand text-brand-fg" },
   { v: "transfer", label: "Transferencia", cls: "bg-sky-500 text-white" },
 ];

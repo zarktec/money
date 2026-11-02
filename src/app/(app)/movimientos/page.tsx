@@ -58,7 +58,7 @@ export default async function Movimientos({ searchParams }: { searchParams: Prom
             const label = t.description || one<Named>(t.category)?.name || one<Named>(t.income_type)?.name || (t.type === "transfer" ? "Transferencia" : "Sin descripción");
             const sign = t.type === "income" ? "+" : t.type === "expense" ? "−" : "";
             return (
-              <Card key={t.id} className={cn("flex items-center gap-3 p-3", t.status === "pending_review" && "border-amber-400")}>
+              <Card key={t.id} className={cn("flex items-center gap-3 p-3", t.status === "pending_review" && "border-warn/60")}>
                 <Link href={`/movimientos/${t.id}`} className="min-w-0 flex-1">
                   <p className="truncate font-medium">{label}</p>
                   <p className="truncate text-xs text-muted">{one<Named>(t.account)?.name}{t.status === "pending_review" && ` · ${t.source === "email" ? "📧 del correo" : "por revisar"}`}</p>

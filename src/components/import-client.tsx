@@ -116,7 +116,7 @@ export function ImportClient({ accounts, categories, defaultYear }: { accounts: 
     <div className="space-y-3">
       <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Revisa antes de guardar</h2><button onClick={reset} className="text-sm text-muted">Empezar de nuevo</button></div>
       {preview.notes && <p className="rounded-xl bg-line/60 px-3 py-2 text-sm">{preview.notes}</p>}
-      {preview.warnings.map((w) => <p key={w} className="rounded-xl bg-amber-500/10 px-3 py-2 text-sm text-amber-700">{w}</p>)}
+      {preview.warnings.map((w) => <p key={w} className="rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn">{w}</p>)}
       {preview.ambiguousSign && (
         <Card className="space-y-2"><p className="text-sm font-medium">Los valores positivos son…</p>
           <div className="grid grid-cols-2 gap-2">{(["expense", "income"] as const).map((p) => <button key={p} onClick={() => { setPositiveIs(p); analyze({ positiveIs: p }); }} className="h-11 rounded-xl border border-line text-sm font-semibold">{p === "expense" ? "Egresos" : "Ingresos"}</button>)}</div></Card>
@@ -125,7 +125,7 @@ export function ImportClient({ accounts, categories, defaultYear }: { accounts: 
       <div className="flex justify-between text-xs text-muted"><button onClick={() => setRows((rs) => rs.map((r) => ({ ...r, include: true })))}>Marcar todo</button><button onClick={() => setRows((rs) => rs.map((r) => ({ ...r, include: false })))}>Desmarcar todo</button></div>
 
       {rows.map((r) => (
-        <Card key={r.key} className={cn("space-y-2 p-3", !r.include && "opacity-50", r.duplicate && "border-amber-400")}>
+        <Card key={r.key} className={cn("space-y-2 p-3", !r.include && "opacity-50", r.duplicate && "border-warn/60")}>
           <div className="flex items-start gap-3">
             <input type="checkbox" checked={r.include} onChange={(e) => patch(r.key, { include: e.target.checked })} className="mt-1 size-5" aria-label="Incluir" />
             <div className="min-w-0 flex-1">

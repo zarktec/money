@@ -4,7 +4,7 @@ import { healthScore } from "@/lib/finance/health";
 import { loadSnapshot } from "@/lib/insights";
 
 export const metadata = { title: "Salud financiera" };
-const COLOR = { excelente: "text-brand", buena: "text-brand", regular: "text-amber-600", crítica: "text-danger" } as const;
+const COLOR = { excelente: "text-brand", buena: "text-brand", regular: "text-warn", crítica: "text-danger" } as const;
 
 export default async function Salud() {
   const s = await loadSnapshot();

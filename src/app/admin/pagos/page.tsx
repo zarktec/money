@@ -4,7 +4,7 @@ import { formatMoney } from "@/lib/finance/money";
 
 export const metadata = { title: "Pagos" };
 const STATUS: Record<string, string> = { APPROVED: "Aprobado", PENDING: "En proceso", DECLINED: "Rechazado", VOIDED: "Anulado", ERROR: "Error" };
-const COLOR: Record<string, string> = { APPROVED: "text-brand", DECLINED: "text-danger", ERROR: "text-danger", VOIDED: "text-muted", PENDING: "text-amber-600" };
+const COLOR: Record<string, string> = { APPROVED: "text-brand", DECLINED: "text-danger", ERROR: "text-danger", VOIDED: "text-muted", PENDING: "text-warn" };
 
 export default async function Pagos() {
   const { supabase } = await requireAdmin();

@@ -8,7 +8,9 @@ export function AuthForm({ mode, next, notice }: { mode: "login" | "registro"; n
   const [state, action, pending] = useActionState<AuthState, FormData>(mode === "login" ? login : register, {});
   return (
     <form action={action} className="space-y-4">
-      {notice && <p role="alert" className="rounded-xl bg-amber-500/10 px-3 py-2 text-sm text-amber-700">{notice}</p>}
+      <div className="mb-2 hidden lg:block"><h2 className="text-2xl font-bold tracking-tight">{mode === "login" ? "Ingresa a tu cuenta" : "Crea tu cuenta"}</h2>
+        <p className="mt-1 text-sm text-muted">{mode === "login" ? "Qué bueno verte de nuevo." : "Empieza gratis, sin tarjeta."}</p></div>
+      {notice && <p role="alert" className="rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn">{notice}</p>}
       {next && <input type="hidden" name="next" value={next} />}
       {mode === "registro" && <div><Label>Nombre</Label><Input name="name" autoComplete="name" defaultValue={state.name} required /></div>}
       <div><Label>Correo</Label><Input name="email" type="email" autoComplete="email" inputMode="email" defaultValue={state.email} required /></div>

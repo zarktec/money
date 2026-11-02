@@ -38,7 +38,7 @@ export function RuleForm({ options, today }: { options: FormOptions; today: stri
     <form action={action} className="space-y-4">
       <div className="grid grid-cols-2 gap-1 rounded-2xl bg-line/60 p-1">
         {(["expense", "income"] as const).map((t) => (
-          <button key={t} type="button" onClick={() => setType(t)} className={`h-11 rounded-xl text-sm font-semibold ${type === t ? (t === "expense" ? "bg-red-500 text-white" : "bg-brand text-brand-fg") : "text-muted"}`}>
+          <button key={t} type="button" onClick={() => setType(t)} className={`h-11 rounded-xl text-sm font-semibold ${type === t ? (t === "expense" ? "bg-danger text-white" : "bg-brand text-brand-fg") : "text-muted"}`}>
             {t === "expense" ? "Egreso fijo" : "Ingreso fijo"}</button>))}
       </div>
       <input type="hidden" name="type" value={type} />

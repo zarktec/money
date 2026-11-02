@@ -32,8 +32,9 @@ export default async function Usuarios() {
   const planName = (id?: string) => plans?.find((p) => p.id === id)?.name ?? "—";
 
   return (
-    <div className="space-y-2">
-      <h1 className="mb-3 text-xl font-bold">Usuarios</h1>
+    <div>
+      <h1 className="mb-4 text-xl font-bold lg:text-2xl">Usuarios</h1>
+      <div className="grid gap-3 lg:grid-cols-2">
       {users?.map((u) => {
         const cur = current.get(u.id);
         return (
@@ -64,6 +65,7 @@ export default async function Usuarios() {
           </Card>
         );
       })}
+      </div>
     </div>
   );
 }

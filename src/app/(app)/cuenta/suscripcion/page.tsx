@@ -47,7 +47,7 @@ export default async function Suscripcion({ searchParams }: { searchParams: Prom
       <h1 className="text-2xl font-bold">Mi plan</h1>
       <PaymentPoller active={refPayment?.status === "PENDING" || (!!ref && !refPayment)} />
 
-      {ref && (!refPayment || refPayment.status === "PENDING") && <p role="status" className="rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-700">Estamos confirmando tu pago con Wompi. Esto toma unos segundos…</p>}
+      {ref && (!refPayment || refPayment.status === "PENDING") && <p role="status" className="rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn">Estamos confirmando tu pago con Wompi. Esto toma unos segundos…</p>}
       {refPayment?.status === "APPROVED" && <p role="status" className="rounded-xl bg-brand/10 px-4 py-3 text-sm text-brand">¡Pago aprobado! Tu plan ya está activo. 🎉</p>}
       {refPayment && ["DECLINED", "ERROR", "VOIDED"].includes(refPayment.status) && <p role="alert" className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">El pago no fue aprobado ({PAY[refPayment.status]}). No se te cobró. <Link href="/precios" className="underline">Intentar de nuevo</Link>.</p>}
 

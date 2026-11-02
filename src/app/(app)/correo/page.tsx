@@ -40,7 +40,7 @@ export default async function Correo({ searchParams }: { searchParams: Promise<{
           <Card key={c.id} className="space-y-3">
             <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-medium">{c.email}</p>
               <p className="text-xs text-muted">{LABEL[c.provider as keyof typeof LABEL]} · {c.active ? (c.last_sync_at ? `última lectura ${new Date(c.last_sync_at).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}` : "aún sin leer") : "desconectada"}</p></div></div>
-            {c.last_error && <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700">{c.last_error}</p>}
+            {c.last_error && <p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">{c.last_error}</p>}
             {s && <p className="text-xs text-muted">Última corrida: {s.created ?? 0} movimientos nuevos, {s.ignored ?? 0} correos descartados.</p>}
             <form action={setConnectionAccount} className="flex items-center gap-2">
               <input type="hidden" name="id" value={c.id} />

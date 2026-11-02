@@ -55,7 +55,7 @@ export default async function Presupuestos({ searchParams }: { searchParams: Pro
             <form action={deleteBudget}><input type="hidden" name="id" value={r.id} /><button aria-label={`Quitar presupuesto de ${r.name}`} className="text-sm text-muted">✕</button></form></div>
           <Progress percent={r.s.percent} level={r.s.level} label={`Gasto en ${r.name}`} />
           <div className="flex justify-between text-xs"><span className="text-muted">{formatMoney(r.spent)} de {formatMoney(r.amount_cents)}</span>
-            <span className={r.s.level === "over" ? "font-semibold text-danger" : r.s.level === "warn" ? "font-semibold text-amber-600" : "text-muted"}>
+            <span className={r.s.level === "over" ? "font-semibold text-danger" : r.s.level === "warn" ? "font-semibold text-warn" : "text-muted"}>
               {r.s.level === "over" ? `Excedido por ${formatMoney(-r.s.remainingCents)}` : r.s.level === "warn" ? `Cuidado: ${r.s.percent}%` : `Quedan ${formatMoney(r.s.remainingCents)}`}</span></div>
         </Card>
       ))}

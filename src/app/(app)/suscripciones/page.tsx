@@ -37,7 +37,7 @@ export default async function Suscripciones() {
           <Card key={c.key} className="space-y-2">
             <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-medium">{c.name}</p><p className="text-xs text-muted">{CADENCE[c.cadence]} · {c.occurrences} cobros · próximo ~{c.nextDate}</p></div>
               <p className="font-semibold tabular-nums">{formatMoney(c.amountCents)}</p></div>
-            {c.priceChange && <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700">⚠️ Subió de {formatMoney(c.priceChange.fromCents)} a {formatMoney(c.priceChange.toCents)}.</p>}
+            {c.priceChange && <p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">⚠️ Subió de {formatMoney(c.priceChange.fromCents)} a {formatMoney(c.priceChange.toCents)}.</p>}
             {last?.accountId && (
               <form action={createRuleFromCandidate}>
                 <input type="hidden" name="name" value={c.name} /><input type="hidden" name="amount_cents" value={c.amountCents} /><input type="hidden" name="cadence" value={c.cadence} />
@@ -49,7 +49,7 @@ export default async function Suscripciones() {
       })}
 
       {dups.length > 0 && <section className="space-y-2"><h2 className="text-xs font-semibold uppercase text-muted">Posibles cobros duplicados (últimos 45 días)</h2>
-        {dups.map((d) => <Card key={d.name + d.dates[0]} className="border-amber-400 p-3"><p className="font-medium">{d.name}</p><p className="text-sm text-muted">{formatMoney(d.amountCents)} cobrado en {d.dates.join(" y ")}. Si no fue intencional, pide el reembolso.</p></Card>)}</section>}
+        {dups.map((d) => <Card key={d.name + d.dates[0]} className="border-warn/60 p-3"><p className="font-medium">{d.name}</p><p className="text-sm text-muted">{formatMoney(d.amountCents)} cobrado en {d.dates.join(" y ")}. Si no fue intencional, pide el reembolso.</p></Card>)}</section>}
     </div>
   );
 }
