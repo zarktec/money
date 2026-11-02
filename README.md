@@ -9,12 +9,13 @@ Stack: **Next.js 15 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgr
 npm install
 cp .env.example .env.local      # completa las variables
 npm run dev
-npm test                        # lógica financiera y firmas de Wompi
+npm test                        # lógica financiera, validaciones y firmas de Wompi
+scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgres local
 ```
 
 ### Base de datos
 1. Crea un proyecto en Supabase.
-2. Ejecuta `supabase/migrations/0001_init.sql` y luego `supabase/seed.sql` (SQL Editor o `supabase db push`).
+2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql` y `supabase/migrations/0002_default_account.sql` (SQL Editor o `supabase db push`).
 3. Registra tu usuario en la app y conviértelo en super admin:
    ```sql
    update profiles set role = 'super_admin' where id = (select id from auth.users where email = 'tu@correo.com');
@@ -42,7 +43,7 @@ npm test                        # lógica financiera y firmas de Wompi
 | 0 | Esquema completo, RLS, semillas CO, lógica financiera con tests | ✅ |
 | 1 | Auth, shell móvil, dashboard "disponible", super admin (usuarios, planes, catálogos) | ✅ |
 | 1 | Cobro Wompi (checkout firmado + webhook) y crons | ✅ |
-| 2 | CRUD: cuentas, ingresos, egresos, recurrentes, transferencias, categorías propias | ⏳ |
+| 2 | Cuentas, ingresos, egresos, recurrentes con provisión, transferencias, categorías propias, captura rápida "+", movimientos con filtros y bandeja de revisión | ✅ |
 | 3 | Metas de ahorro, proyectos, presupuestos, calendario y recordatorios push | ⏳ |
 | 4 | Deudas (avalancha/bola de nieve), patrimonio, proyección de flujo de caja | ⏳ |
 | 5 | Importar extractos (CSV/PDF) y foto de recibo con IA | ⏳ |

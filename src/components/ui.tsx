@@ -12,3 +12,12 @@ export const Input = ({ className, ...p }: React.InputHTMLAttributes<HTMLInputEl
 
 export const Label = ({ children }: { children: React.ReactNode }) =>
   <label className="mb-1 block text-sm font-medium text-muted">{children}</label>;
+
+export const Select = ({ className, children, ...p }: React.SelectHTMLAttributes<HTMLSelectElement>) =>
+  <select className={cn("h-12 w-full rounded-xl border border-line bg-card px-3 outline-none focus:border-brand", className)} {...p}>{children}</select>;
+
+export const Field = ({ label, children }: { label: string; children: React.ReactNode }) =>
+  <div><Label>{label}</Label>{children}</div>;
+
+export const FormError = ({ error }: { error?: string }) =>
+  error ? <p role="alert" className="text-sm text-danger">{error}</p> : null;
