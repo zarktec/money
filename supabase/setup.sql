@@ -987,6 +987,13 @@ end $$;
 create trigger trg_scrub_payments before delete on profiles for each row execute function scrub_payments_on_profile_delete();
 
 -- ===================================================================
+-- supabase/migrations/0009_email_notifications.sql
+-- ===================================================================
+-- Fase 9: el usuario decide si la app le envía avisos por correo (recordatorios, vencimiento del plan, recibos de pago).
+-- Los correos de la cuenta (confirmar, recuperar contraseña) los envía Supabase Auth y no dependen de esto.
+alter table profiles add column if not exists email_notifications boolean not null default true;
+
+-- ===================================================================
 -- Usuarios que se registraron ANTES de instalar este esquema
 -- ===================================================================
 -- El disparador que crea el perfil y la cuenta «Efectivo» solo actúa sobre usuarios nuevos. Esto los crea para quienes ya existían

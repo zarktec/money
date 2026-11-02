@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyEvent, type WompiEvent } from "@/lib/wompi";
+import { mailConfigured, sendMail } from "@/lib/mail/resend";
+import { emailFor } from "@/lib/mail/notify";
+import { paymentReceiptEmail } from "@/lib/mail/templates";
 import { nextPeriod, type Interval } from "@/lib/billing";
 
 export const runtime = "nodejs";
@@ -31,7 +34,7 @@ export async function POST(req: Request) {
 
   if (tx.status === "APPROVED" && payment.subscription_id) {
     const { data: sub } = await db.from("subscriptions").select("id, plan_id, current_period_end").eq("id", payment.subscription_id).single();
-    const { data: plan } = sub ? await db.from("plans").select("interval").eq("id", sub.plan_id).single() : { data: null };
+    const { data: plan } = sub ? await db.from("plans").select("interval, name").eq("id", sub.plan_id).single() : { data: null };
     if (sub && plan) {
       // Renovación a tiempo: el nuevo periodo empieza donde terminó el anterior (no se pierden días).
       const { start, end } = nextPeriod(plan.interval as Interval, sub.current_period_end, new Date());
@@ -41,6 +44,13 @@ export async function POST(req: Request) {
       }).eq("id", sub.id);
       // Un usuario solo conserva una suscripción vigente: cancelar las anteriores (activas o en prueba) de otros planes/compras.
       await db.from("subscriptions").update({ status: "canceled" }).eq("user_id", payment.user_id).neq("id", sub.id).in("status", ["active", "trialing"]);
+      // Recibo por correo. Es un extra: si falla, el pago ya quedó registrado y no se debe reintentar el webhook por esto.
+      if (mailConfigured() && payment.user_id) {
+        try {
+          const email = await emailFor(db, payment.user_id);
+          if (email) await sendMail({ to: email, ...paymentReceiptEmail({ planName: (plan as { name?: string }).name ?? "", amountCents: payment.amount_cents, currency: payment.currency, reference: payment.reference, date: new Date() }), idempotencyKey: `receipt:${payment.id}` });
+        } catch { /* sin recibo */ }
+      }
     }
   } else if (tx.status === "DECLINED" || tx.status === "ERROR") {
     // Cobro automático rechazado: la suscripción queda en mora y el cron reintenta; ver /api/cron/renewals.

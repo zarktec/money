@@ -1,5 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptSecret } from "@/lib/email/crypto";
@@ -51,4 +52,13 @@ export async function changePassword(_: FormState, fd: FormData): Promise<FormSt
   }
   await supabase.auth.signOut({ scope: "others" }).catch(() => {});
   return { ok: true };
+}
+
+/** Activa o apaga los avisos por correo (recordatorios, vencimiento del plan, recibos). */
+export async function setEmailNotifications(fd: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("profiles").update({ email_notifications: fd.get("enabled") === "true" }).eq("id", user.id);
+  revalidatePath("/cuenta/notificaciones");
 }

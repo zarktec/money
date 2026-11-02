@@ -1,6 +1,6 @@
 import {
   Home, ArrowLeftRight, PiggyBank, Wallet, CalendarDays, Landmark, FolderKanban, TrendingUp, HeartPulse, Scale, Sparkles,
-  ScanLine, Mail, Users, BadgeCheck, Database, KeyRound, Repeat, Tags, Receipt, PieChart, Shield, type LucideIcon,
+  ScanLine, Mail, Users, BadgeCheck, Database, KeyRound, Repeat, Tags, Receipt, PieChart, Shield, Bell, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem { href: string; label: string; hint?: string; Icon: LucideIcon }
@@ -38,6 +38,7 @@ export const NAV_GROUPS: NavGroup[] = [
   ] },
   { title: "Mi cuenta", items: [
     { href: "/cuenta/suscripcion", label: "Mi plan", hint: "Suscripción y pagos", Icon: BadgeCheck },
+    { href: "/cuenta/notificaciones", label: "Notificaciones", hint: "Correo y avisos", Icon: Bell },
     { href: "/cuenta/datos", label: "Mis datos", hint: "Exportar o eliminar", Icon: Database },
     { href: "/cuenta/clave", label: "Contraseña", hint: "Cambiar contraseña", Icon: KeyRound },
   ] },

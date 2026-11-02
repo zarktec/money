@@ -44,4 +44,23 @@ Authentication → **Emails** → **Templates**. Pega el HTML de cada archivo de
 
 ## Notas
 - La API key vive solo en Supabase (SMTP); **no** hace falta como variable de entorno en Vercel.
-- Los correos de la app que no son de autenticación (recordatorios de pago, etc.) hoy salen por notificaciones push; si luego quieres enviarlos por correo con Resend, se agrega con `RESEND_API_KEY` en Vercel.
+- 
+
+## Correos que envía la propia app (Resend API)
+Además de los de cuenta, la app envía por Resend:
+- **Recordatorios de pagos/ingresos por vencer** (cron diario): un solo correo por usuario con todos los del día.
+- **Plan o prueba por vencer** (3 días y 1 día antes).
+- **Recibo de pago** cuando Wompi aprueba un cobro.
+
+Cada usuario puede apagarlos en **Más → Notificaciones** (`/cuenta/notificaciones`). Cada correo trae el enlace para hacerlo.
+
+Variables en Vercel (Production y Preview):
+
+| Variable | Valor |
+|---|---|
+| `RESEND_API_KEY` | API key de Resend (`re_...`) con permiso de envío |
+| `MAIL_FROM` | `Money <avisos@mail.zark.pro>` (del dominio verificado) |
+| `MAIL_REPLY_TO` | opcional |
+
+Además, ejecuta una vez en el SQL Editor de Supabase: `supabase/migrations/0009_email_notifications.sql` (agrega la preferencia a `profiles`).
+Sin `RESEND_API_KEY` y `MAIL_FROM` los envíos simplemente se omiten.
