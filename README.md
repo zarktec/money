@@ -15,7 +15,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 
 ### Base de datos
 1. Crea un proyecto en Supabase.
-2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, `supabase/migrations/0002_default_account.sql`, `supabase/migrations/0003_planning.sql` `supabase/migrations/0004_debts_networth.sql` y `supabase/migrations/0005_imports_ai.sql` (SQL Editor o `supabase db push`).
+2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, `supabase/migrations/0002_default_account.sql`, `supabase/migrations/0003_planning.sql`, `supabase/migrations/0004_debts_networth.sql` y `supabase/migrations/0005_imports_ai.sql` (SQL Editor o `supabase db push`).
 3. Registra tu usuario en la app y conviértelo en super admin:
    ```sql
    update profiles set role = 'super_admin' where id = (select id from auth.users where email = 'tu@correo.com');
