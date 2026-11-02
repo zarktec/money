@@ -2,6 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getIntegration } from "@/lib/integrations/store";
 import { todayISO } from "@/lib/dates";
 import { aiModel, extractTransactions, type AiClient } from "@/lib/ai/extract";
 import { aiQuota, recordAiUsage } from "@/lib/ai/usage";
@@ -17,10 +18,10 @@ import { syncMailbox, type SyncContext, type SyncStats } from "./sync";
 export type OAuthProviderName = "google" | "microsoft";
 export const DB_PROVIDER = { google: "gmail", microsoft: "outlook" } as const;
 
-/** Credenciales OAuth de la app (variables de entorno). null si el proveedor no está configurado. */
-export function oauthConfig(p: OAuthProviderName): OAuthConfig | null {
-  const id = p === "google" ? process.env.GOOGLE_CLIENT_ID : process.env.MICROSOFT_CLIENT_ID;
-  const secret = p === "google" ? process.env.GOOGLE_CLIENT_SECRET : process.env.MICROSOFT_CLIENT_SECRET;
+/** Credenciales OAuth de la app: las del panel de admin o, si no hay, las variables de entorno. null si el proveedor no está configurado. */
+export async function oauthConfig(p: OAuthProviderName): Promise<OAuthConfig | null> {
+  const c = await getIntegration(p);
+  const id = c.client_id, secret = c.client_secret;
   const app = process.env.NEXT_PUBLIC_APP_URL;
   if (!id || !secret || !app) return null;
   return { clientId: id, clientSecret: secret, redirectUri: `${app}/api/email/${p}/callback`, scopes: p === "google" ? GOOGLE_SCOPES : MICROSOFT_SCOPES, endpoints: p === "google" ? GOOGLE_ENDPOINTS : MICROSOFT_ENDPOINTS };
@@ -36,7 +37,7 @@ async function buildProvider(c: ConnRow): Promise<MailProvider> {
   const secret = JSON.parse(decryptSecret(c.secret_encrypted, secretAad(c.user_id, c.email)));
   if (c.provider === "imap") return new ImapProvider(secret);
   const name: OAuthProviderName = c.provider === "gmail" ? "google" : "microsoft";
-  const cfg = oauthConfig(name);
+  const cfg = await oauthConfig(name);
   if (!cfg) throw new Error(`${name} no está configurado`);
   try {
     const t = await refreshAccessToken(cfg, secret.refreshToken);

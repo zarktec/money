@@ -3,11 +3,9 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
-export const WOMPI_API = process.env.WOMPI_API_URL ?? "https://sandbox.wompi.co/v1";
-
-/** Firma de integridad para el Web Checkout: SHA256(reference + amountInCents + currency + integritySecret). */
-export function integritySignature(reference: string, amountInCents: number, currency: string): string {
-  return sha256(`${reference}${amountInCents}${currency}${process.env.WOMPI_INTEGRITY_SECRET}`);
+/** Firma de integridad para el Web Checkout: SHA256(reference + amountInCents + currency + integritySecret). El secreto sale del panel de admin (o del entorno). */
+export function integritySignature(reference: string, amountInCents: number, currency: string, integritySecret: string): string {
+  return sha256(`${reference}${amountInCents}${currency}${integritySecret}`);
 }
 
 export interface WompiEvent {
@@ -23,7 +21,7 @@ const getPath = (obj: unknown, path: string): unknown =>
   path.split(".").reduce<unknown>((acc, k) => (acc && typeof acc === "object" ? (acc as Record<string, unknown>)[k] : undefined), obj);
 
 /** Verifica el checksum del evento: SHA256(valores de signature.properties + timestamp + events secret). */
-export function verifyEvent(evt: WompiEvent, secret = process.env.WOMPI_EVENTS_SECRET): boolean {
+export function verifyEvent(evt: WompiEvent, secret: string | undefined): boolean {
   if (!secret || !evt?.signature?.checksum) return false;
   const values = evt.signature.properties.map((p) => String(getPath(evt.data, p) ?? "")).join("");
   const expected = sha256(`${values}${evt.timestamp}${secret}`);

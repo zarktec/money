@@ -25,7 +25,7 @@ export default async function Correo({ searchParams }: { searchParams: Promise<{
   const used = (conns ?? []).filter((c) => c.active).length;
   const canAdd = used < maxConns;
   const hasAccounts = o.accounts.length > 0;
-  const google = !!oauthConfig("google"), microsoft = !!oauthConfig("microsoft");
+  const [google, microsoft] = (await Promise.all([oauthConfig("google"), oauthConfig("microsoft")])).map(Boolean);
   const accountName = (id: string | null) => o.accounts.find((a) => a.id === id)?.name ?? "—";
 
   return (

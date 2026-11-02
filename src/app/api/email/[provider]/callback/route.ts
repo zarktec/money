@@ -22,7 +22,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ provider
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(new URL("/login?next=/correo", req.url));
 
-  const cfg = oauthConfig(provider as OAuthProviderName), secret = process.env.OAUTH_STATE_SECRET;
+  const cfg = await oauthConfig(provider as OAuthProviderName), secret = process.env.OAUTH_STATE_SECRET;
   if (!cfg || !secret) return back(req, "Esta conexión aún no está configurada.");
 
   let cookie: { nonce?: string; accountId?: string } = {};

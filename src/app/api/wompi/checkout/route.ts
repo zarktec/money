@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { integritySignature, newReference } from "@/lib/wompi";
+import { getIntegration } from "@/lib/integrations/store";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -14,6 +15,9 @@ export async function POST(req: Request) {
   // El precio SIEMPRE se lee del servidor; nunca se confía en el cliente.
   const { data: plan } = await supabase.from("plans").select("id, code, price_cents, currency, active").eq("code", planCode).single();
   if (!plan || !plan.active || plan.price_cents <= 0) return NextResponse.json({ error: "Plan no disponible" }, { status: 400 });
+
+  const wompi = await getIntegration("wompi");
+  if (!wompi.public_key || !wompi.integrity_secret) return NextResponse.json({ error: "El cobro aún no está configurado." }, { status: 503 });
 
   const reference = newReference(user.id, plan.code);
   const admin = createAdminClient();
@@ -29,11 +33,11 @@ export async function POST(req: Request) {
   if (error) return NextResponse.json({ error: "No se pudo iniciar el pago" }, { status: 500 });
 
   const url = new URL("https://checkout.wompi.co/p/");
-  url.searchParams.set("public-key", process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY!);
+  url.searchParams.set("public-key", wompi.public_key);
   url.searchParams.set("currency", plan.currency);
   url.searchParams.set("amount-in-cents", String(plan.price_cents));
   url.searchParams.set("reference", reference);
-  url.searchParams.set("signature:integrity", integritySignature(reference, plan.price_cents, plan.currency));
+  url.searchParams.set("signature:integrity", integritySignature(reference, plan.price_cents, plan.currency, wompi.integrity_secret));
   url.searchParams.set("redirect-url", `${process.env.NEXT_PUBLIC_APP_URL}/cuenta/suscripcion?ref=${reference}`);
   if (user.email) url.searchParams.set("customer-data:email", user.email);
   return NextResponse.json({ url: url.toString(), reference });

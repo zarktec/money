@@ -23,7 +23,11 @@ export function fakeDb(seed: Record<string, Row[]> = {}, unique: Record<string, 
       for (const raw of list) {
         const row: Row = { id: `${table}-${++n}`, ...raw };
         const clash = (unique[table] ?? []).some((cols) => cols.every((c) => row[c] != null) && tables[table].some((r) => cols.every((c) => r[c] === row[c])));
-        if (clash) { if (action === "upsert" && qopts?.ignoreDuplicates) continue; return { data: null, error: { code: "23505", message: "duplicate key" } }; }
+        if (clash && action === "upsert" && !qopts?.ignoreDuplicates) {   // upsert real: la fila existente se actualiza
+          const cols = (unique[table] ?? []).find((c) => c.every((k) => row[k] != null) && tables[table].some((r) => c.every((k) => r[k] === row[k])))!;
+          Object.assign(tables[table].find((r) => cols.every((k) => r[k] === row[k]))!, raw); continue;
+        }
+        if (clash) { if (action === "upsert") continue; return { data: null, error: { code: "23505", message: "duplicate key" } }; }
         tables[table].push(row); inserted.push(row);
       }
       return { data: returning ? inserted : null, error: null };

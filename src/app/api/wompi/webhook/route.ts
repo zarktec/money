@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getIntegration } from "@/lib/integrations/store";
 import { verifyEvent, type WompiEvent } from "@/lib/wompi";
 import { mailConfigured, sendMail } from "@/lib/mail/resend";
 import { emailFor } from "@/lib/mail/notify";
@@ -10,7 +11,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const evt = (await req.json().catch(() => null)) as WompiEvent | null;
-  if (!evt || !verifyEvent(evt)) return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
+  if (!evt || !verifyEvent(evt, (await getIntegration("wompi")).events_secret)) return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
 
   const tx = evt.data.transaction;
   if (evt.event !== "transaction.updated" || !tx) return NextResponse.json({ ok: true, ignored: true });

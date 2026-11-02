@@ -6,9 +6,8 @@ const { integritySignature, verifyEvent } = await import("./index");
 
 describe("wompi", () => {
   it("firma de integridad", () => {
-    process.env.WOMPI_INTEGRITY_SECRET = "sec";
     const expected = createHash("sha256").update("ref12990000COPsec").digest("hex");
-    expect(integritySignature("ref1", 2990000, "COP")).toBe(expected);
+    expect(integritySignature("ref1", 2990000, "COP", "sec")).toBe(expected);
   });
   it("verifica checksum de evento y rechaza alterados", () => {
     const secret = "evt_secret";
@@ -21,5 +20,7 @@ describe("wompi", () => {
     expect(verifyEvent(base, secret)).toBe(true);
     const tampered = { ...base, data: { transaction: { ...base.data.transaction, status: "DECLINED" } } };
     expect(verifyEvent(tampered, secret)).toBe(false);
+    expect(verifyEvent(base, undefined)).toBe(false);
+    expect(verifyEvent(base, "otro_secreto")).toBe(false);
   });
 });
