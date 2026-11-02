@@ -71,3 +71,41 @@ describe("summary", () => {
     expect(savingsRate(0, 10)).toBe(0);
   });
 });
+
+import { budgetStatus, remindersDue, reminderKey, reminderText, upcomingEvents, type RuleLite } from "./planning";
+const rule = (o: Partial<RuleLite> = {}): RuleLite => ({
+  id: "r1", name: "Arriendo", type: "expense", amount_cents: 100, amount_is_estimate: false, frequency: "monthly",
+  next_date: "2026-11-10", remind_days_before: 3, active: true, ...o,
+});
+describe("planning", () => {
+  it("presupuesto: alertas al 80 % y 100 %", () => {
+    expect(budgetStatus(7900, 10000).level).toBe("ok");
+    expect(budgetStatus(8000, 10000).level).toBe("warn");
+    expect(budgetStatus(10000, 10000).level).toBe("over");
+    expect(budgetStatus(15000, 10000)).toMatchObject({ percent: 150, remainingCents: -5000 });
+    expect(budgetStatus(5, 0).percent).toBe(0);
+  });
+  it("calendario: expande ocurrencias y marca vencidos", () => {
+    const ev = upcomingEvents([rule({ next_date: "2026-10-30" })], "2026-11-02", "2026-12-31");
+    expect(ev.map((e) => e.date)).toEqual(["2026-10-30", "2026-11-30", "2026-12-30"]);
+    expect(ev[0].overdue).toBe(true);
+    expect(ev[1].overdue).toBe(false);
+  });
+  it("calendario: respeta pausa y fecha fin", () => {
+    expect(upcomingEvents([rule({ active: false })], "2026-11-01", "2027-01-01")).toHaveLength(0);
+    expect(upcomingEvents([rule({ end_date: "2026-11-15" })], "2026-11-01", "2027-01-01")).toHaveLength(1);
+  });
+  it("recordatorios: N días antes y el día del vencimiento", () => {
+    expect(remindersDue([rule()], "2026-11-07").map((d) => d.kind)).toEqual(["before"]);
+    expect(remindersDue([rule()], "2026-11-10").map((d) => d.kind)).toEqual(["due"]);
+    expect(remindersDue([rule()], "2026-11-08")).toHaveLength(0);
+    expect(remindersDue([rule({ remind_days_before: 0 })], "2026-11-07")).toHaveLength(0);
+    expect(reminderKey(remindersDue([rule()], "2026-11-10")[0])).toBe("r1:2026-11-10:due");
+  });
+  it("texto del recordatorio", () => {
+    expect(reminderText(remindersDue([rule({ amount_cents: 120_000_000 })], "2026-11-10")[0]).body).toMatch(/Arriendo vence hoy: .*1\.200\.000/);
+    expect(reminderText(remindersDue([rule()], "2026-11-09")[0] ?? remindersDue([rule({ remind_days_before: 1 })], "2026-11-09")[0]).body).toMatch(/mañana/);
+    expect(reminderText(remindersDue([rule({ type: "income", name: "Salario", amount_is_estimate: true })], "2026-11-07")[0])).toEqual(
+      { title: "Ingreso esperado", body: expect.stringMatching(/Salario llega en 3 días: .*\(aprox\.\)/) });
+  });
+});

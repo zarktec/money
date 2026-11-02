@@ -17,7 +17,7 @@ const TYPES: { v: TxType; label: string; cls: string }[] = [
 
 export interface TxInitial {
   id?: string; type?: TxType; amount?: string; occurred_on?: string; account_id?: string; to_account_id?: string | null;
-  category_id?: string | null; income_type_id?: string | null; description?: string | null; notes?: string | null;
+  category_id?: string | null; income_type_id?: string | null; description?: string | null; notes?: string | null; project_id?: string | null;
 }
 
 export function TransactionForm({ options, initial, today }: { options: FormOptions; initial?: TxInitial; today: string }) {
@@ -90,6 +90,15 @@ export function TransactionForm({ options, initial, today }: { options: FormOpti
         <Field label="Fecha"><Input name="occurred_on" type="date" defaultValue={initial?.occurred_on ?? today} required /></Field>
         <Field label="Descripción"><Input name="description" defaultValue={initial?.description ?? ""} placeholder="Opcional" maxLength={120} /></Field>
       </div>
+
+      {type !== "transfer" && options.projects.length > 0 && (
+        <Field label="Proyecto">
+          <Select name="project_id" defaultValue={initial?.project_id ?? ""}>
+            <option value="">Ninguno</option>
+            {options.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Select>
+        </Field>
+      )}
 
       {!editing && type !== "transfer" && (
         <Field label="¿Se repite?">

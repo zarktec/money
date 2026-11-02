@@ -2,6 +2,7 @@ import Link from "next/link";
 import { addMonths, endOfMonth, format, parse, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { createClient } from "@/lib/supabase/server";
+import { todayISO } from "@/lib/dates";
 import { Card } from "@/components/ui";
 import { formatMoney } from "@/lib/finance/money";
 import { confirmTransaction, deleteTransaction } from "../actions";
@@ -16,7 +17,7 @@ const FILTERS = [["", "Todos"], ["expense", "Egresos"], ["income", "Ingresos"], 
 
 export default async function Movimientos({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string }> }) {
   const sp = await searchParams;
-  const month = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? parse(sp.mes!, "yyyy-MM", new Date()) : new Date();
+  const month = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? parse(sp.mes!, "yyyy-MM", new Date()) : parse(todayISO(), "yyyy-MM-dd", new Date());
   const mes = format(month, "yyyy-MM");
   const tipo = sp.tipo ?? "";
 

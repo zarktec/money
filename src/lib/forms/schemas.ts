@@ -68,4 +68,50 @@ export const categorySchema = z.object({
   essential: z.string().optional().transform((v) => v === "on"),
 });
 
+export const goalSchema = z.object({
+  name: z.string().trim().min(1, "Ponle un nombre a la meta").max(80),
+  target: amount,
+  target_date: isoDate,
+  project_id: emptyToNull,
+  account_id: emptyToNull,
+});
+
+export const contributionSchema = z.object({
+  goal_id: z.string().min(1),
+  kind: z.enum(["deposit", "withdraw"]).default("deposit"),
+  amount,
+  contributed_on: isoDate,
+  note: emptyToNull,
+});
+
+export const projectSchema = z.object({
+  name: z.string().trim().min(1, "Ponle un nombre al proyecto").max(80),
+  description: emptyToNull,
+  budget: z.string().optional().transform((s, ctx) => {
+    if (!s || !s.trim()) return null;
+    const c = parseMoneyInput(s);
+    if (c === null || c <= 0) { ctx.addIssue({ code: "custom", message: "Presupuesto inválido" }); return z.NEVER; }
+    return c;
+  }),
+  end_date: emptyToNull,
+});
+
+export const budgetSchema = z.object({
+  category_id: z.string().min(1, "Elige una categoría"),
+  amount,
+  month: z.string().regex(/^\d{4}-\d{2}$/),
+});
+
+export const payRuleSchema = z.object({
+  id: z.string().min(1),
+  due: isoDate,
+  paid_on: isoDate,
+  amount: z.string().optional().transform((s, ctx) => {
+    if (!s || !s.trim()) return null;           // vacío = usar el monto de la regla
+    const c = parseMoneyInput(s);
+    if (c === null || c <= 0) { ctx.addIssue({ code: "custom", message: "Monto inválido" }); return z.NEVER; }
+    return c;
+  }),
+});
+
 export interface FormState { error?: string; ok?: boolean }

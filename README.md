@@ -15,7 +15,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 
 ### Base de datos
 1. Crea un proyecto en Supabase.
-2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql` y `supabase/migrations/0002_default_account.sql` (SQL Editor o `supabase db push`).
+2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql` `supabase/migrations/0002_default_account.sql` y `supabase/migrations/0003_planning.sql` (SQL Editor o `supabase db push`).
 3. Registra tu usuario en la app y conviértelo en super admin:
    ```sql
    update profiles set role = 'super_admin' where id = (select id from auth.users where email = 'tu@correo.com');
@@ -24,8 +24,9 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 ### Despliegue en Vercel
 1. Importa el repo y define **todas** las variables de `.env.example` (Node 22).
 2. Los crons (`vercel.json`) llaman a `/api/cron/*` con `Authorization: Bearer $CRON_SECRET`.
-3. En Wompi (Desarrolladores → Eventos) configura la URL de eventos: `https://TU_DOMINIO/api/wompi/webhook`.
-4. En Supabase → Auth → URL Configuration agrega `https://TU_DOMINIO/auth/callback`.
+3. Notificaciones push: `npx web-push generate-vapid-keys` y carga `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`. Sin ellas el cron de recordatorios se omite sin error.
+4. En Wompi (Desarrolladores → Eventos) configura la URL de eventos: `https://TU_DOMINIO/api/wompi/webhook`.
+5. En Supabase → Auth → URL Configuration agrega `https://TU_DOMINIO/auth/callback`.
 
 ## Diseño clave
 - **Montos como enteros** (centavos). Nunca floats. Ver `src/lib/finance/`.
@@ -44,7 +45,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 | 1 | Auth, shell móvil, dashboard "disponible", super admin (usuarios, planes, catálogos) | ✅ |
 | 1 | Cobro Wompi (checkout firmado + webhook) y crons | ✅ |
 | 2 | Cuentas, ingresos, egresos, recurrentes con provisión, transferencias, categorías propias, captura rápida "+", movimientos con filtros y bandeja de revisión | ✅ |
-| 3 | Metas de ahorro, proyectos, presupuestos, calendario y recordatorios push | ⏳ |
+| 3 | Metas de ahorro con aportes, proyectos, presupuestos con alertas, calendario de vencimientos (pagar/omitir) y recordatorios push | ✅ |
 | 4 | Deudas (avalancha/bola de nieve), patrimonio, proyección de flujo de caja | ⏳ |
 | 5 | Importar extractos (CSV/PDF) y foto de recibo con IA | ⏳ |
 | 6 | Correo (Gmail/Outlook/IMAP) + bandeja de revisión + reglas aprendidas | ⏳ |
