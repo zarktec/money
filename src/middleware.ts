@@ -1,0 +1,40 @@
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+
+const PUBLIC = ["/", "/login", "/registro", "/precios", "/privacidad", "/terminos", "/auth"];
+const isPublic = (p: string) => PUBLIC.some((x) => p === x || (x !== "/" && p.startsWith(x + "/")));
+
+export async function middleware(req: NextRequest) {
+  let res = NextResponse.next({ request: req });
+  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      getAll: () => req.cookies.getAll(),
+      setAll: (list) => {
+        list.forEach(({ name, value }) => req.cookies.set(name, value));
+        res = NextResponse.next({ request: req });
+        list.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+      },
+    },
+  });
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const { pathname } = req.nextUrl;
+
+  if (!user && !isPublic(pathname)) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+  if (user && (pathname === "/login" || pathname === "/registro")) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/inicio";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+  return res;
+}
+
+export const config = {
+  matcher: ["/((?!api/wompi/webhook|api/cron|_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/|.*\\.(?:svg|png|jpg|jpeg|webp|ico)$).*)"],
+};

@@ -1,0 +1,35 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { integritySignature, newReference } from "@/lib/wompi";
+
+export async function POST(req: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+
+  const { planCode } = (await req.json().catch(() => ({}))) as { planCode?: string };
+  if (!planCode) return NextResponse.json({ error: "planCode requerido" }, { status: 400 });
+
+  // El precio SIEMPRE se lee del servidor; nunca se confía en el cliente.
+  const { data: plan } = await supabase.from("plans").select("id, code, price_cents, currency, active").eq("code", planCode).single();
+  if (!plan || !plan.active || plan.price_cents <= 0) return NextResponse.json({ error: "Plan no disponible" }, { status: 400 });
+
+  const reference = newReference(user.id, plan.code);
+  const admin = createAdminClient();
+  const { data: sub } = await admin.from("subscriptions").insert({ user_id: user.id, plan_id: plan.id, status: "trialing" }).select("id").single();
+  const { error } = await admin.from("payments").insert({
+    user_id: user.id, subscription_id: sub?.id, reference, amount_cents: plan.price_cents, currency: plan.currency, status: "PENDING",
+  });
+  if (error) return NextResponse.json({ error: "No se pudo iniciar el pago" }, { status: 500 });
+
+  const url = new URL("https://checkout.wompi.co/p/");
+  url.searchParams.set("public-key", process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY!);
+  url.searchParams.set("currency", plan.currency);
+  url.searchParams.set("amount-in-cents", String(plan.price_cents));
+  url.searchParams.set("reference", reference);
+  url.searchParams.set("signature:integrity", integritySignature(reference, plan.price_cents, plan.currency));
+  url.searchParams.set("redirect-url", `${process.env.NEXT_PUBLIC_APP_URL}/cuenta/suscripcion?ref=${reference}`);
+  if (user.email) url.searchParams.set("customer-data:email", user.email);
+  return NextResponse.json({ url: url.toString(), reference });
+}
