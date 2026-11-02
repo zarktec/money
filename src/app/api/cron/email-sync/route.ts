@@ -8,13 +8,15 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 const BUDGET_MS = 50_000;     // deja margen para cerrar la corrida antes del límite de la función
 const MAX_CONNECTIONS = 20;
+const MIN_GAP_MS = 45_000;
 
-/** Cada hora: sincroniza las conexiones más atrasadas primero y se detiene a tiempo; las pendientes siguen en la siguiente corrida. */
+/** Cada minuto: sincroniza las conexiones más atrasadas primero y se detiene a tiempo; las pendientes siguen en la siguiente corrida.
+ *  Una conexión sincronizada hace menos de MIN_GAP_MS se salta: evita repetir trabajo si una corrida se alarga y se solapa con la siguiente. */
 export async function GET(req: Request) {
   if (!isCronAuthorized(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const db = createAdminClient();
   const deadline = Date.now() + BUDGET_MS;
-  const { data: conns, error } = await db.from("email_connections").select("id, user_id").eq("active", true).order("last_sync_at", { ascending: true, nullsFirst: true }).limit(MAX_CONNECTIONS);
+  const { data: conns, error } = await db.from("email_connections").select("id, user_id").eq("active", true).or(`last_sync_at.is.null,last_sync_at.lt.${new Date(Date.now() - MIN_GAP_MS).toISOString()}`).order("last_sync_at", { ascending: true, nullsFirst: true }).limit(MAX_CONNECTIONS);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const allowed = new Map<string, boolean>();

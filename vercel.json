@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/cron/email-sync",
-      "schedule": "15 13 * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/billing-reminders",
