@@ -16,7 +16,7 @@ export default async function Inicio() {
   const today = todayISO();
   const { from, to } = monthBounds(today);
 
-  const [{ data: profile }, { data: txs }, { data: rules }, { data: goals }, { data: contribs }, { data: budgets }, { count: pending }] = await Promise.all([
+  const [{ data: profile }, { data: txs }, { data: rules }, { data: goals }, { data: contribs }, { data: budgets }, { count: pending }, { data: debts }] = await Promise.all([
     supabase.from("profiles").select("full_name, currency").eq("id", user!.id).single(),
     supabase.from("transactions").select("type, amount_cents, category_id").eq("status", "confirmed").gte("occurred_on", from).lte("occurred_on", to),
     supabase.from("recurring_rules").select("id, name, type, amount_cents, amount_is_estimate, frequency, interval_days, next_date, end_date, remind_days_before, active").eq("active", true),
@@ -24,6 +24,7 @@ export default async function Inicio() {
     supabase.from("goal_contributions").select("goal_id, amount_cents").gte("contributed_on", from).lte("contributed_on", to),
     supabase.from("budgets").select("category_id, amount_cents").eq("period_month", from),
     supabase.from("transactions").select("id", { count: "exact", head: true }).eq("status", "pending_review"),
+    supabase.from("debts").select("installment_cents, next_due_date").eq("active", true).not("installment_cents", "is", null).gte("next_due_date", from).lte("next_due_date", to),
   ]);
 
   const sum = (t: string) => (txs ?? []).filter((x) => x.type === t).reduce((a, x) => a + x.amount_cents, 0);
@@ -40,7 +41,8 @@ export default async function Inicio() {
     return a + Math.max(quota - (doneByGoal.get(g.id) ?? 0), 0);
   }, 0);
 
-  const pendingFixed = expenseRules.filter((r) => r.frequency === "monthly" && r.next_date >= from && r.next_date <= to).reduce((a, r) => a + r.amount_cents, 0);
+  const pendingDebts = (debts ?? []).reduce((a, d) => a + Number(d.installment_cents ?? 0), 0);
+  const pendingFixed = expenseRules.filter((r) => r.frequency === "monthly" && r.next_date >= from && r.next_date <= to).reduce((a, r) => a + r.amount_cents, 0) + pendingDebts;
   const available = availableToSpend({ incomeCents: income, expenseCents: expense, provisionsCents: provisions, goalContributionsCents: goalsMonthly, pendingFixedCents: pendingFixed });
   const cur = profile?.currency ?? "COP";
 
@@ -73,6 +75,12 @@ export default async function Inicio() {
 
       {budgetAlerts.length > 0 && <Link href="/presupuestos"><Card className={over ? "border-danger" : "border-amber-400"}>
         <p className="font-semibold">{over > 0 && `${over} presupuesto(s) excedido(s)`}{over > 0 && warn > 0 && " · "}{warn > 0 && `${warn} cerca del límite`}</p><p className="text-sm text-muted">Revisa tus presupuestos del mes.</p></Card></Link>}
+
+      <div className="grid grid-cols-3 gap-2 text-center text-sm font-semibold">
+        <Link href="/salud" className="rounded-xl border border-line bg-card py-3">Salud</Link>
+        <Link href="/proyeccion" className="rounded-xl border border-line bg-card py-3">Proyección</Link>
+        <Link href="/patrimonio" className="rounded-xl border border-line bg-card py-3">Patrimonio</Link>
+      </div>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between"><h2 className="font-semibold">Próximos 7 días</h2><Link href="/calendario" className="text-sm font-semibold text-brand">Ver calendario</Link></div>

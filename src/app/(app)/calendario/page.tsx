@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui";
 import { formatMoney } from "@/lib/finance/money";
@@ -21,6 +22,8 @@ export default async function Calendario() {
   const supabase = await createClient();
   const { data: rules } = await supabase.from("recurring_rules")
     .select("id, name, type, amount_cents, amount_is_estimate, frequency, interval_days, next_date, end_date, remind_days_before, active").eq("active", true);
+  const horizon = addDaysISO(today, 45);
+  const { data: debts } = await supabase.from("debts").select("id, name, installment_cents, next_due_date").eq("active", true).not("next_due_date", "is", null).lte("next_due_date", horizon).order("next_due_date");
   const events = upcomingEvents((rules ?? []) as RuleLite[], today, addDaysISO(today, 45), 4);
   const groups = new Map<string, typeof events>();
   for (const e of events) { const k = e.overdue ? "overdue" : e.date; groups.set(k, [...(groups.get(k) ?? []), e]); }
@@ -30,7 +33,16 @@ export default async function Calendario() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Calendario</h1>
       <p className="text-sm text-muted">Lo que vence en los próximos 45 días.</p>
-      {!events.length && <p className="py-10 text-center text-muted">No hay vencimientos próximos. Agrega tus fijos en «Fijos y recurrentes».</p>}
+      {!!debts?.length && (
+        <section className="space-y-2"><h2 className="text-xs font-semibold uppercase text-muted">Cuotas de deudas</h2>
+          {debts.map((d) => (
+            <Link key={d.id} href={`/deudas/${d.id}`}><Card className={cn("mb-2 flex items-center justify-between gap-3 p-3", d.next_due_date < today && "border-danger")}>
+              <div className="min-w-0"><p className="truncate font-medium">{d.name}</p><p className="text-xs text-muted">{d.next_due_date < today ? `Venció el ${d.next_due_date}` : dayLabel(d.next_due_date, today)} · toca para registrar el pago</p></div>
+              {d.installment_cents && <p className="font-semibold tabular-nums">{formatMoney(Number(d.installment_cents))}</p>}
+            </Card></Link>))}
+        </section>
+      )}
+      {!events.length && !debts?.length && <p className="py-10 text-center text-muted">No hay vencimientos próximos. Agrega tus fijos en «Fijos y recurrentes».</p>}
       {[...groups.entries()].map(([k, items]) => (
         <section key={k} className="space-y-2">
           <h2 className={cn("text-xs font-semibold uppercase", k === "overdue" ? "text-danger" : "text-muted")}>{k === "overdue" ? "Vencidos" : dayLabel(k, today)}</h2>

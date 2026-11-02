@@ -114,4 +114,55 @@ export const payRuleSchema = z.object({
   }),
 });
 
+const optMoney = z.string().optional().transform((s, ctx) => {
+  if (!s || !s.trim()) return null;
+  const c = parseMoneyInput(s);
+  if (c === null || c < 0) { ctx.addIssue({ code: "custom", message: "Monto inválido" }); return z.NEVER; }
+  return c;
+});
+const optInt = (min: number, max: number, msg: string) => z.string().optional().transform((s, ctx) => {
+  if (!s || !s.trim()) return null;
+  const n = Number(s);
+  if (!Number.isInteger(n) || n < min || n > max) { ctx.addIssue({ code: "custom", message: msg }); return z.NEVER; }
+  return n;
+});
+
+export const DEBT_KINDS: Record<string, string> = {
+  loan: "Préstamo de libre inversión", credit_card: "Tarjeta de crédito (diferido)", mortgage: "Crédito de vivienda",
+  vehicle: "Crédito de vehículo", personal: "Préstamo personal (familia/amigos)", other: "Otra",
+};
+
+export const debtSchema = z.object({
+  name: z.string().trim().min(1, "Ponle un nombre a la deuda").max(80),
+  kind: z.enum(["loan", "credit_card", "mortgage", "vehicle", "personal", "other"]),
+  creditor: emptyToNull,
+  bank_id: emptyToNull,
+  principal: amount,
+  balance: optMoney,
+  annual_rate: z.string().optional().transform((s, ctx) => {
+    if (!s || !s.trim()) return null;
+    const n = Number(s.replace(",", "."));
+    if (!Number.isFinite(n) || n < 0 || n > 200) { ctx.addIssue({ code: "custom", message: "La tasa E.A. debe estar entre 0 y 200" }); return z.NEVER; }
+    return n;
+  }),
+  installment: optMoney,
+  total_installments: optInt(1, 600, "Número de cuotas inválido"),
+  due_day: optInt(1, 31, "El día de pago debe estar entre 1 y 31"),
+  next_due_date: emptyToNull,
+});
+
+export const debtPaymentSchema = z.object({
+  debt_id: z.string().min(1),
+  amount,
+  paid_on: isoDate,
+  account_id: z.string().min(1, "Elige la cuenta de la que pagas"),
+});
+
+export const ASSET_KINDS: Record<string, string> = { property: "Vivienda / lote", vehicle: "Vehículo", investment: "Inversión (CDT, acciones, fondos)", savings: "Ahorro fuera de cuentas", other: "Otro" };
+export const assetSchema = z.object({
+  name: z.string().trim().min(1, "Ponle un nombre").max(80),
+  kind: z.enum(["property", "vehicle", "investment", "savings", "other"]),
+  value: amount,
+});
+
 export interface FormState { error?: string; ok?: boolean }

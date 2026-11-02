@@ -38,3 +38,23 @@ describe("ruleSchema / accountSchema", () => {
     expect(accountSchema.parse({ name: "Caja", type: "cash" }).opening_balance).toBe(0);
   });
 });
+
+import { assetSchema, debtPaymentSchema, debtSchema } from "./schemas";
+describe("deudas y bienes", () => {
+  const base = { name: "Moto", kind: "vehicle", principal: "10.000.000" };
+  it("deuda mínima y con tasa/cuotas", () => {
+    const r = debtSchema.parse({ ...base, annual_rate: "21,5", installment: "450.000", total_installments: "24", due_day: "5" });
+    expect(r).toMatchObject({ principal: 1_000_000_000, annual_rate: 21.5, installment: 45_000_000, total_installments: 24, due_day: 5, balance: null });
+  });
+  it("rechaza tasa absurda, día inválido y cuotas decimales", () => {
+    expect(debtSchema.safeParse({ ...base, annual_rate: "900" }).success).toBe(false);
+    expect(debtSchema.safeParse({ ...base, due_day: "40" }).success).toBe(false);
+    expect(debtSchema.safeParse({ ...base, total_installments: "2.5" }).success).toBe(false);
+    expect(debtSchema.safeParse({ ...base, principal: "0" }).success).toBe(false);
+  });
+  it("pago y bien", () => {
+    expect(debtPaymentSchema.parse({ debt_id: "d", amount: "450 mil", paid_on: "2026-11-05", account_id: "a" }).amount).toBe(45_000_000);
+    expect(debtPaymentSchema.safeParse({ debt_id: "d", amount: "450 mil", paid_on: "2026-11-05", account_id: "" }).success).toBe(false);
+    expect(assetSchema.parse({ name: "Apto", kind: "property", value: "250 millones" }).value).toBe(25_000_000_000);
+  });
+});
