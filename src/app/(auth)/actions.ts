@@ -39,7 +39,10 @@ export async function requestPasswordReset(_: AuthState, fd: FormData): Promise<
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Escribe un correo válido.", email };
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${await appUrl()}/auth/callback?next=${encodeURIComponent("/cuenta/clave")}` }).catch(() => {});
+  // La respuesta al usuario no cambia, pero el motivo real (límite de envíos, SMTP mal configurado…) queda en los logs. Sin el correo: es dato personal.
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${await appUrl()}/auth/callback?next=${encodeURIComponent("/cuenta/clave")}` })
+    .catch((e: unknown) => ({ error: { message: e instanceof Error ? e.message : "fallo de red", code: "network", status: 0 } }));
+  if (error) console.error("[auth] resetPasswordForEmail falló:", { code: (error as { code?: string }).code, status: (error as { status?: number }).status, message: error.message });
   return { info: "Si ese correo tiene una cuenta, te enviamos un enlace para crear una contraseña nueva. Revisa también la carpeta de spam. Si no llega en unos minutos, espera un poco antes de pedirlo otra vez." };
 }
 
