@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { selectAll } from "@/lib/db-page";
 import { Card } from "@/components/ui";
 import { formatMoney } from "@/lib/finance/money";
 import { monthlyProvision, type Frequency } from "@/lib/finance/recurrence";
@@ -16,9 +17,9 @@ export default async function Inicio() {
   const today = todayISO();
   const { from, to } = monthBounds(today);
 
-  const [{ data: profile }, { data: txs }, { data: rules }, { data: goals }, { data: contribs }, { data: budgets }, { count: pending }, { data: debts }] = await Promise.all([
+  const [{ data: profile }, txs, { data: rules }, { data: goals }, { data: contribs }, { data: budgets }, { count: pending }, { data: debts }] = await Promise.all([
     supabase.from("profiles").select("full_name, currency").eq("id", user!.id).single(),
-    supabase.from("transactions").select("type, amount_cents, category_id").eq("status", "confirmed").gte("occurred_on", from).lte("occurred_on", to),
+    selectAll<{ type: string; amount_cents: number; category_id: string | null }>((a, b) => supabase.from("transactions").select("type, amount_cents, category_id").eq("status", "confirmed").gte("occurred_on", from).lte("occurred_on", to).order("id").range(a, b)),
     supabase.from("recurring_rules").select("id, name, type, amount_cents, amount_is_estimate, frequency, interval_days, next_date, end_date, remind_days_before, active").eq("active", true),
     supabase.from("savings_goals").select("id, target_cents, saved_cents, target_date").eq("status", "active"),
     supabase.from("goal_contributions").select("goal_id, amount_cents").gte("contributed_on", from).lte("contributed_on", to),
@@ -27,7 +28,7 @@ export default async function Inicio() {
     supabase.from("debts").select("installment_cents, next_due_date").eq("active", true).not("installment_cents", "is", null).gte("next_due_date", from).lte("next_due_date", to),
   ]);
 
-  const sum = (t: string) => (txs ?? []).filter((x) => x.type === t).reduce((a, x) => a + x.amount_cents, 0);
+  const sum = (t: string) => txs.filter((x) => x.type === t).reduce((a, x) => a + x.amount_cents, 0);
   const income = sum("income"), expense = sum("expense");
   const expenseRules = (rules ?? []).filter((r) => r.type === "expense");
   const provisions = expenseRules.reduce((a, r) => a + monthlyProvision(r.amount_cents, r.frequency as Frequency), 0);
@@ -47,7 +48,7 @@ export default async function Inicio() {
   const cur = profile?.currency ?? "COP";
 
   const spentByCat = new Map<string, number>();
-  for (const t of txs ?? []) if (t.type === "expense" && t.category_id) spentByCat.set(t.category_id, (spentByCat.get(t.category_id) ?? 0) + t.amount_cents);
+  for (const t of txs) if (t.type === "expense" && t.category_id) spentByCat.set(t.category_id, (spentByCat.get(t.category_id) ?? 0) + t.amount_cents);
   const budgetAlerts = (budgets ?? []).map((b) => budgetStatus(spentByCat.get(b.category_id) ?? 0, b.amount_cents)).filter((s) => s.level !== "ok");
   const over = budgetAlerts.filter((s) => s.level === "over").length, warn = budgetAlerts.length - over;
 

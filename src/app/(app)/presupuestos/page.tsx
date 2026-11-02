@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { selectAll } from "@/lib/db-page";
 import { Card } from "@/components/ui";
 import { Progress } from "@/components/progress";
 import { BudgetForm } from "@/components/planning-forms";
@@ -19,13 +20,13 @@ export default async function Presupuestos({ searchParams }: { searchParams: Pro
   const { from, to } = monthBounds(`${month}-01`);
 
   const supabase = await createClient();
-  const [{ data: budgets }, { data: spent }, options] = await Promise.all([
+  const [{ data: budgets }, spent, options] = await Promise.all([
     supabase.from("budgets").select("id, category_id, amount_cents, category:expense_categories(name)").eq("period_month", from),
-    supabase.from("transactions").select("category_id, amount_cents").eq("type", "expense").eq("status", "confirmed").gte("occurred_on", from).lte("occurred_on", to),
+    selectAll<{ category_id: string | null; amount_cents: number }>((a, b) => supabase.from("transactions").select("category_id, amount_cents").eq("type", "expense").eq("status", "confirmed").gte("occurred_on", from).lte("occurred_on", to).order("id").range(a, b)),
     getFormOptions(),
   ]);
   const byCat = new Map<string, number>();
-  for (const t of spent ?? []) if (t.category_id) byCat.set(t.category_id, (byCat.get(t.category_id) ?? 0) + t.amount_cents);
+  for (const t of spent) if (t.category_id) byCat.set(t.category_id, (byCat.get(t.category_id) ?? 0) + t.amount_cents);
 
   const rows = (budgets ?? []).map((b) => {
     const cat = Array.isArray(b.category) ? b.category[0] : b.category;

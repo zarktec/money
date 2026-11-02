@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
@@ -32,6 +32,6 @@ export function verifyEvent(evt: WompiEvent, secret = process.env.WOMPI_EVENTS_S
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** Referencia única y trazable por usuario/plan. */
+/** Referencia única, trazable por usuario/plan e impredecible (el sufijo aleatorio evita choques en un doble clic). */
 export const newReference = (userId: string, planCode: string) =>
-  `money-${planCode}-${userId.slice(0, 8)}-${Date.now()}`;
+  `money-${planCode}-${userId.slice(0, 8)}-${Date.now()}-${randomBytes(4).toString("hex")}`;

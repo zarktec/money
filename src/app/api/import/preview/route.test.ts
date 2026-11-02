@@ -18,7 +18,7 @@ function fakeDb(data: () => Record<string, unknown>, count: () => number, insert
     auth: { getUser: async () => ({ data: { user } }) },
     from(table: string) {
       const b: any = {
-        select: () => b, eq: () => b, in: () => b, gte: () => b, or: () => b, order: () => b, limit: () => b, is: () => b,
+        select: () => b, eq: () => b, in: () => b, gte: () => b, gt: () => b, or: () => b, order: () => b, limit: () => b, is: () => b,
         maybeSingle: async () => { const d = data()[table]; return { data: Array.isArray(d) ? d[0] ?? null : d ?? null, error: null }; },
         insert: async (row: unknown) => { inserts?.push({ table, row }); return { error: null }; },
         then: (res: any, rej: any) => Promise.resolve({ data: data()[table] ?? null, count: count(), error: null }).then(res, rej),

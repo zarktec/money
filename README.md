@@ -15,7 +15,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 
 ### Base de datos
 1. Crea un proyecto en Supabase.
-2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, y luego `0002_default_account.sql`, `0003_planning.sql`, `0004_debts_networth.sql`, `0005_imports_ai.sql`, `0006_email.sql` y `0007_shared.sql` (SQL Editor o `supabase db push`).
+2. Ejecuta en orden `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, y luego `0002_default_account.sql`, `0003_planning.sql`, `0004_debts_networth.sql`, `0005_imports_ai.sql`, `0006_email.sql`, `0007_shared.sql` y `0008_plans_enforcement.sql` (SQL Editor o `supabase db push`).
 3. Registra tu usuario en la app y conviértelo en super admin:
    ```sql
    update profiles set role = 'super_admin' where id = (select id from auth.users where email = 'tu@correo.com');
@@ -40,6 +40,7 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 - **Disponible para gastar** = ingresos − gastos − provisiones − aportes a metas − fijos pendientes.
 - **Metas**: cuota mensual = restante / meses hasta la fecha, recalculada con lo ya ahorrado.
 - **Secretos de correo**: cifrados con AES-256-GCM atados a su dueño, y el cliente no puede leer esa columna (permiso por columna en la base de datos).
+- **Planes**: los límites (cuentas, proyectos, metas) los hace cumplir la base de datos con triggers; solo una suscripción activa, en prueba o en mora **con fecha de fin futura** da derechos (un checkout sin pagar nunca los da). Eliminar la cuenta borra todo salvo los pagos, que quedan anonimizados por obligación contable.
 - **Asistente**: el modelo solo puede invocar consultas de solo lectura predefinidas (con argumentos validados) que se ejecutan con la sesión del usuario; no escribe SQL ni modifica datos. Cada pregunta consume 1 del cupo mensual de IA.
 - **Gastos compartidos**: las partes de cada gasto se validan en la base de datos (función SQL) y las escrituras directas están bloqueadas.
 - **Bandeja de revisión**: lo detectado automáticamente (correo/OCR/banco) entra como `pending_review`.
@@ -60,7 +61,8 @@ scripts/test-db.sh              # migraciones + pruebas de RLS contra un Postgre
 | 6 | Correo (Gmail, Outlook, IMAP) con filtro previo, IA, deduplicación, bandeja de revisión, reglas aprendidas y detección de suscripciones | ✅ |
 | 7 | Gastos compartidos y asistente conversacional | ✅ |
 | 7 | Open banking (Belvo/Prometeo) y multimoneda | ⏳ requiere contrato con el agregador |
-| 8 | Página de precios, límites por plan, renovación automática con fuente de pago Wompi | ⏳ |
+| 8 | Página de precios, límites por plan en la base de datos, prueba gratis sin tarjeta, «Mi plan», renovación asistida con avisos, exportar a Excel/PDF/JSON, respaldo y eliminar cuenta | ✅ |
+| 8 | Renovación automática con tarjeta guardada en Wompi | ⏳ pendiente: no pude verificar la API de Wompi |
 
 > Wompi: hoy el cobro es por checkout (pago único por periodo). La renovación automática requiere crear una *fuente de pago* tokenizada; está en la fase 8.
 > Gmail: el alcance `gmail.readonly` es restringido; Google exige verificación de seguridad (CASA) para publicarlo.

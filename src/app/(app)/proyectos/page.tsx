@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { selectAll } from "@/lib/db-page";
 import { Card } from "@/components/ui";
 import { Progress } from "@/components/progress";
 import { formatMoney } from "@/lib/finance/money";
@@ -9,12 +10,12 @@ export const metadata = { title: "Proyectos" };
 
 export default async function Proyectos() {
   const supabase = await createClient();
-  const [{ data: projects }, { data: spent }] = await Promise.all([
+  const [{ data: projects }, spent] = await Promise.all([
     supabase.from("projects").select("id, name, budget_cents, end_date").eq("archived", false).order("created_at", { ascending: false }),
-    supabase.from("transactions").select("project_id, amount_cents").eq("type", "expense").eq("status", "confirmed").not("project_id", "is", null),
+    selectAll<{ project_id: string; amount_cents: number }>((a, b) => supabase.from("transactions").select("project_id, amount_cents").eq("type", "expense").eq("status", "confirmed").not("project_id", "is", null).order("id").range(a, b)),
   ]);
   const byProject = new Map<string, number>();
-  for (const t of spent ?? []) byProject.set(t.project_id, (byProject.get(t.project_id) ?? 0) + t.amount_cents);
+  for (const t of spent) byProject.set(t.project_id, (byProject.get(t.project_id) ?? 0) + t.amount_cents);
 
   return (
     <div className="space-y-4">

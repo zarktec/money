@@ -7,6 +7,7 @@ import { monthsToPayOff } from "@/lib/finance/debts";
 import { merchantKey } from "@/lib/email/subscriptions";
 import { normalizeText } from "@/lib/imports/parse";
 import { addDaysISO } from "@/lib/dates";
+import { selectAll } from "@/lib/db-page";
 
 /** Solo lectura. El modelo elige entre estas consultas; no escribe SQL ni modifica nada. Los montos salen en pesos enteros. */
 const pesos = (cents: number) => Math.round(cents / 100);
@@ -19,12 +20,12 @@ export interface ToolDef { name: string; description: string; input_schema: Reco
 
 const obj = (properties: Record<string, unknown>, required: string[]) => ({ type: "object", properties, required, additionalProperties: false });
 const D = { type: "string", description: "Fecha YYYY-MM-DD" };
-const MAX_ROWS = 5000;
 
 async function categoryNames(db: SupabaseClient) { const { data } = await db.from("expense_categories").select("id, name"); return new Map<string, string>((data ?? []).map((c: { id: string; name: string }) => [c.id, c.name])); }
 async function txs(db: SupabaseClient, from: string, to: string) {
-  const { data } = await db.from("transactions").select("type, amount_cents, occurred_on, description, merchant, category_id").eq("status", "confirmed").neq("type", "transfer").gte("occurred_on", from).lte("occurred_on", to).limit(MAX_ROWS);
-  return (data ?? []) as { type: string; amount_cents: number; occurred_on: string; description: string | null; merchant: string | null; category_id: string | null }[];
+  type Row = { type: string; amount_cents: number; occurred_on: string; description: string | null; merchant: string | null; category_id: string | null };
+  return selectAll<Row>((a, b) => db.from("transactions").select("type, amount_cents, occurred_on, description, merchant, category_id")
+    .eq("status", "confirmed").neq("type", "transfer").gte("occurred_on", from).lte("occurred_on", to).order("occurred_on").order("id").range(a, b));
 }
 
 export const TOOLS: ToolDef[] = [

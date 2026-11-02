@@ -48,7 +48,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/email/[provider]/start", () => {
-  const withPro = () => { adminDb = fakeDb({ subscriptions: [{ user_id: "u1", status: "active", plan: { limits: { email_connections: 2 } } }], email_connections: [] }); };
+  const withPro = () => { adminDb = fakeDb({ subscriptions: [{ user_id: "u1", status: "active", current_period_end: new Date(Date.now() + 864e5).toISOString(), plan: { limits: { email_connections: 2 } } }], email_connections: [] }); };
   it("proveedor desconocido → 404; sin sesión → login", async () => {
     expect((await start(startReq(), p("yahoo"))).status).toBe(404);
     user = null;

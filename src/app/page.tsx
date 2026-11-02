@@ -8,6 +8,7 @@ export default function Home() {
       <div className="flex flex-col gap-3">
         <Link href="/registro" className="rounded-xl bg-brand py-3.5 font-semibold text-brand-fg">Crear cuenta</Link>
         <Link href="/login" className="rounded-xl border border-line py-3.5 font-semibold">Ingresar</Link>
+        <Link href="/precios" className="py-2 text-sm font-semibold text-brand">Ver planes y precios</Link>
       </div>
     </main>
   );

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { selectAll } from "@/lib/db-page";
 import { Card } from "@/components/ui";
 import { formatMoney } from "@/lib/finance/money";
 import { detectDuplicateCharges, detectRecurring, type ChargeLite } from "@/lib/email/subscriptions";
@@ -12,11 +13,13 @@ const PER_MONTH = { weekly: 52 / 12, monthly: 1, annual: 1 / 12 } as const;
 export default async function Suscripciones() {
   const supabase = await createClient();
   const today = todayISO();
-  const [{ data: txs }, { data: rules }] = await Promise.all([
-    supabase.from("transactions").select("id, amount_cents, occurred_on, description, merchant, account_id, category_id").eq("type", "expense").eq("status", "confirmed").gte("occurred_on", addDaysISO(today, -400)).limit(3000),
+  const [txs, { data: rules }] = await Promise.all([
+    selectAll<{ id: string; amount_cents: number; occurred_on: string; description: string | null; merchant: string | null; account_id: string | null; category_id: string | null }>((a, b) =>
+      supabase.from("transactions").select("id, amount_cents, occurred_on, description, merchant, account_id, category_id").eq("type", "expense").eq("status", "confirmed")
+        .gte("occurred_on", addDaysISO(today, -400)).order("occurred_on").order("id").range(a, b)),
     supabase.from("recurring_rules").select("name").eq("active", true),
   ]);
-  const charges: (ChargeLite & { accountId: string | null; categoryId: string | null })[] = (txs ?? []).map((t) => ({ id: t.id, amountCents: Number(t.amount_cents), date: t.occurred_on, merchant: t.merchant, description: t.description, accountId: t.account_id, categoryId: t.category_id }));
+  const charges: (ChargeLite & { accountId: string | null; categoryId: string | null })[] = txs.map((t) => ({ id: t.id, amountCents: Number(t.amount_cents), date: t.occurred_on, merchant: t.merchant, description: t.description, accountId: t.account_id, categoryId: t.category_id }));
   const byId = new Map(charges.map((c) => [c.id, c]));
   const cands = detectRecurring(charges, (rules ?? []).map((r) => r.name));
   const dups = detectDuplicateCharges(charges.filter((c) => c.date >= addDaysISO(today, -45)));

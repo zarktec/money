@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { selectAll } from "@/lib/db-page";
 import { addDaysISO, monthBounds, shiftMonth, todayISO } from "@/lib/dates";
 import { monthlyEquivalent, type Frequency } from "@/lib/finance/recurrence";
 import { goalProgress } from "@/lib/finance/savings";
@@ -26,11 +27,14 @@ export async function loadSnapshot() {
   ]);
 
   // Promedios: últimos 3 meses completos; si no hay historial, el mes en curso hasta hoy (contado como 1 mes).
-  const selectTx = () => supabase.from("transactions").select("type, amount_cents, occurred_on, recurring_rule_id, category_id").eq("status", "confirmed").neq("type", "transfer");
-  let { data: txs } = await selectTx().gte("occurred_on", winFrom).lte("occurred_on", winTo);
-  if (!txs?.length) ({ data: txs } = await selectTx().gte("occurred_on", cur.from).lte("occurred_on", today));
-  const months = Math.max(new Set((txs ?? []).map((t) => t.occurred_on.slice(0, 7))).size, 1);
-  const sum = (f: (t: NonNullable<typeof txs>[number]) => boolean) => (txs ?? []).filter(f).reduce((a, t) => a + t.amount_cents, 0) / months;
+  type Tx = { type: string; amount_cents: number; occurred_on: string; recurring_rule_id: string | null; category_id: string | null };
+  // Paginado: PostgREST corta en 1.000 filas y los promedios saldrían mal para quien tiene muchos movimientos.
+  const readTx = (a: string, b: string) => selectAll<Tx>((from, to) => supabase.from("transactions").select("type, amount_cents, occurred_on, recurring_rule_id, category_id")
+    .eq("status", "confirmed").neq("type", "transfer").gte("occurred_on", a).lte("occurred_on", b).order("occurred_on").order("id").range(from, to));
+  let txs = await readTx(winFrom, winTo);
+  if (!txs.length) txs = await readTx(cur.from, today);
+  const months = Math.max(new Set(txs.map((t) => t.occurred_on.slice(0, 7))).size, 1);
+  const sum = (f: (t: Tx) => boolean) => txs.filter(f).reduce((a, t) => a + t.amount_cents, 0) / months;
   const avgIncome = Math.round(sum((t) => t.type === "income"));
   const avgExpense = Math.round(sum((t) => t.type === "expense"));
   const avgVariable = Math.round(sum((t) => t.type === "expense" && !t.recurring_rule_id && t.category_id !== debtCat.data?.id));

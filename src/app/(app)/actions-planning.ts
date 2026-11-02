@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { budgetSchema, contributionSchema, goalSchema, payRuleSchema, projectSchema, type FormState } from "@/lib/forms/schemas";
 import { nextOccurrence, type Frequency } from "@/lib/finance/recurrence";
 import { shiftMonth, todayISO } from "@/lib/dates";
+import { planLimitMessage } from "@/lib/plan-error";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -34,7 +35,7 @@ export async function saveGoal(_: FormState, fd: FormData): Promise<FormState> {
   const { data, error } = await supabase.from("savings_goals").insert({
     user_id: userId, name: v.name, target_cents: v.target, target_date: v.target_date, project_id: v.project_id, account_id: v.account_id,
   }).select("id").single();
-  if (error || !data) return { error: "No se pudo crear la meta" };
+  if (error || !data) return { error: planLimitMessage(error?.message) ?? "No se pudo crear la meta" };
   refresh();
   redirect(`/ahorros/${data.id}`);
 }
@@ -82,7 +83,7 @@ export async function saveProject(_: FormState, fd: FormData): Promise<FormState
   const { data, error } = await supabase.from("projects").insert({
     user_id: userId, name: v.name, description: v.description, budget_cents: v.budget, end_date: v.end_date,
   }).select("id").single();
-  if (error || !data) return { error: "No se pudo crear el proyecto" };
+  if (error || !data) return { error: planLimitMessage(error?.message) ?? "No se pudo crear el proyecto" };
   refresh();
   redirect(`/proyectos/${data.id}`);
 }

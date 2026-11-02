@@ -17,7 +17,12 @@ export async function POST(req: Request) {
 
   const reference = newReference(user.id, plan.code);
   const admin = createAdminClient();
-  const { data: sub } = await admin.from("subscriptions").insert({ user_id: user.id, plan_id: plan.id, status: "trialing" }).select("id").single();
+  // Renovación: si ya tiene una suscripción vigente de ESTE plan, el pago se asocia a ella y el webhook suma el nuevo periodo al final
+  // del actual (no se pierden días). Si no, se usa (o crea) una suscripción 'pending': checkout sin pagar, que nunca da derechos.
+  const { data: vigente } = await admin.from("subscriptions").select("id").eq("user_id", user.id).eq("plan_id", plan.id)
+    .in("status", ["active", "trialing", "past_due"]).gt("current_period_end", new Date().toISOString()).limit(1).maybeSingle();
+  const { data: existing } = vigente ? { data: null } : await admin.from("subscriptions").select("id").eq("user_id", user.id).eq("plan_id", plan.id).eq("status", "pending").limit(1).maybeSingle();
+  const sub = vigente ?? existing ?? (await admin.from("subscriptions").insert({ user_id: user.id, plan_id: plan.id, status: "pending" }).select("id").single()).data;
   const { error } = await admin.from("payments").insert({
     user_id: user.id, subscription_id: sub?.id, reference, amount_cents: plan.price_cents, currency: plan.currency, status: "PENDING",
   });

@@ -5,7 +5,7 @@ export const metadata = { title: "Administración" };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
-  const links = [["/admin", "Resumen"], ["/admin/usuarios", "Usuarios"], ["/admin/planes", "Planes"], ["/admin/catalogos/bancos", "Catálogos"]];
+  const links = [["/admin", "Resumen"], ["/admin/usuarios", "Usuarios"], ["/admin/planes", "Planes"], ["/admin/pagos", "Pagos"], ["/admin/catalogos/bancos", "Catálogos"]];
   return (
     <div className="mx-auto min-h-dvh max-w-3xl px-4 py-6">
       <nav className="mb-6 flex gap-2 overflow-x-auto">

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { accountSchema, categorySchema, ruleSchema, txSchema, type FormState } from "@/lib/forms/schemas";
 import { monthlyProvision, nextOccurrence, type Frequency } from "@/lib/finance/recurrence";
 import { learnMerchantRule } from "@/lib/learn";
+import { planLimitMessage } from "@/lib/plan-error";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -104,7 +105,7 @@ export async function saveAccount(_: FormState, fd: FormData): Promise<FormState
   const { error } = await supabase.from("accounts").insert({
     user_id: userId, name: v.name, type: v.type, bank_id: v.bank_id, opening_balance_cents: v.opening_balance,
   });
-  if (error) return { error: "No se pudo crear la cuenta" };
+  if (error) return { error: planLimitMessage(error.message) ?? "No se pudo crear la cuenta" };
   refresh();
   redirect("/cuentas");
 }

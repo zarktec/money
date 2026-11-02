@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { addMonths, addYears } from "date-fns";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyEvent, type WompiEvent } from "@/lib/wompi";
+import { nextPeriod, type Interval } from "@/lib/billing";
 
 export const runtime = "nodejs";
 
@@ -33,15 +33,18 @@ export async function POST(req: Request) {
     const { data: sub } = await db.from("subscriptions").select("id, plan_id, current_period_end").eq("id", payment.subscription_id).single();
     const { data: plan } = sub ? await db.from("plans").select("interval").eq("id", sub.plan_id).single() : { data: null };
     if (sub && plan) {
-      const start = new Date();
-      const end = plan.interval === "year" ? addYears(start, 1) : plan.interval === "lifetime" ? addYears(start, 100) : addMonths(start, 1);
+      // Renovación a tiempo: el nuevo periodo empieza donde terminó el anterior (no se pierden días).
+      const { start, end } = nextPeriod(plan.interval as Interval, sub.current_period_end, new Date());
       await db.from("subscriptions").update({
-        status: "active", current_period_start: start.toISOString(), current_period_end: end.toISOString(),
-        wompi_payment_source_id: tx.payment_source_id ? String(tx.payment_source_id) : null, wompi_customer_email: tx.customer_email ?? null,
+        status: "active", current_period_start: start.toISOString(), current_period_end: end.toISOString(), renewal_attempts: 0, last_renewal_attempt_at: null,
+        ...(tx.payment_source_id ? { wompi_payment_source_id: String(tx.payment_source_id) } : {}), wompi_customer_email: tx.customer_email ?? null,
       }).eq("id", sub.id);
-      // Un usuario solo conserva una suscripción activa: cancelar las anteriores.
-      await db.from("subscriptions").update({ status: "canceled" }).eq("user_id", payment.user_id).neq("id", sub.id).eq("status", "active");
+      // Un usuario solo conserva una suscripción vigente: cancelar las anteriores (activas o en prueba) de otros planes/compras.
+      await db.from("subscriptions").update({ status: "canceled" }).eq("user_id", payment.user_id).neq("id", sub.id).in("status", ["active", "trialing"]);
     }
+  } else if (tx.status === "DECLINED" || tx.status === "ERROR") {
+    // Cobro automático rechazado: la suscripción queda en mora y el cron reintenta; ver /api/cron/renewals.
+    if (payment.subscription_id) await db.from("subscriptions").update({ status: "past_due" }).eq("id", payment.subscription_id).eq("status", "active");
   }
   return NextResponse.json({ ok: true });
 }

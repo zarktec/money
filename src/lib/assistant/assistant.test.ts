@@ -75,6 +75,11 @@ describe("herramientas (solo lectura)", () => {
       expect(db.ops.filter((o: any) => o.op !== "select")).toEqual([]);
     });
   });
+  it("REGRESIÓN: con más de 1.000 movimientos (tope de PostgREST) suma TODOS, no solo los primeros 1.000", async () => {
+    const many = fakeDb({ expense_categories: [], transactions: Array.from({ length: 2500 }, () => tx({ amount_cents: 100_00 })) }, {}, { maxRows: 1000 });
+    const r = await runTool("spending_by_category", { from: "2026-11-01", to: "2026-11-30", type: "expense" }, { db: many as any, today: TODAY });
+    expect(JSON.parse(r.content).total_cop).toBe(2500 * 100);
+  });
   it("recorta resultados enormes", async () => {
     const big = fakeDb({ expense_categories: [], transactions: Array.from({ length: 3000 }, (_, i) => tx({ description: `Comercio número ${i} con un nombre largo largo largo`, amount_cents: 100 + i })) });
     const r = await runTool("search_transactions", { from: "2026-11-01", to: "2026-11-30", text: "", min_cop: 0, limit: 20 }, { db: big as any, today: TODAY });
