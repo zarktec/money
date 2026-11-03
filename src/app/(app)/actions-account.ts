@@ -62,3 +62,24 @@ export async function setEmailNotifications(fd: FormData) {
   await supabase.from("profiles").update({ email_notifications: fd.get("enabled") === "true" }).eq("id", user.id);
   revalidatePath("/cuenta/notificaciones");
 }
+
+/** Borra una conversación del asistente (y sus mensajes). La política RLS ya limita el borrado a lo propio. */
+export async function deleteConversation(fd: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const id = String(fd.get("id") ?? "");
+  if (/^[0-9a-f-]{36}$/i.test(id)) await supabase.from("assistant_conversations").delete().eq("id", id).eq("user_id", user.id);
+  revalidatePath("/asistente");
+  redirect("/asistente");
+}
+
+/** Borra TODO el historial del asistente del usuario. */
+export async function deleteAllConversations() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("assistant_conversations").delete().eq("user_id", user.id);
+  revalidatePath("/asistente");
+  redirect("/asistente");
+}

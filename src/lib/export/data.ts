@@ -35,6 +35,7 @@ export const BACKUP_TABLES: { table: string; columns: string; ownerCol: string }
   { table: "savings_goals", columns: "*", ownerCol: "user_id" }, { table: "goal_contributions", columns: "*", ownerCol: "user_id" }, { table: "projects", columns: "*", ownerCol: "user_id" },
   { table: "debts", columns: "*", ownerCol: "user_id" }, { table: "debt_payments", columns: "*", ownerCol: "user_id" }, { table: "assets", columns: "*", ownerCol: "user_id" },
   { table: "shared_groups", columns: "*", ownerCol: "user_id" }, { table: "shared_members", columns: "*", ownerCol: "user_id" }, { table: "shared_expenses", columns: "*", ownerCol: "user_id" },
+  { table: "assistant_conversations", columns: "*", ownerCol: "user_id" }, { table: "assistant_messages", columns: "*", ownerCol: "user_id" },
   { table: "shared_splits", columns: "*", ownerCol: "user_id" }, { table: "shared_settlements", columns: "*", ownerCol: "user_id" }, { table: "import_batches", columns: "*", ownerCol: "user_id" },
   { table: "email_connections", columns: "id, provider, email, created_at, last_sync_at, active", ownerCol: "user_id" },
   { table: "subscriptions", columns: "id, plan_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at", ownerCol: "user_id" },
