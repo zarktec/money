@@ -45,6 +45,7 @@ beforeAll(async () => {
 afterAll(() => new Promise<void>((r) => server.close(() => r())));
 
 const { POST } = await import("./route");
+const { clearIntegrationCache } = await import("@/lib/integrations/store");
 
 const cats = [{ id: "cat-mercado", name: "Mercado" }, { id: "cat-rest", name: "Restaurantes y domicilios" }];
 const merchants = [{ match_pattern: "rappi", category_id: "cat-rest", user_id: null }];
@@ -56,7 +57,7 @@ beforeEach(() => {
   userData = { accounts: [{ id: "acc1" }], expense_categories: cats, merchants, transactions: [] };
   adminData = { subscriptions: null, plans: [{ limits: { ai_requests_month: 3 } }] };
   adminCount = 0; adminInserts.length = 0; apiCalls = 0;
-  process.env.ANTHROPIC_API_KEY = "test-key";
+  process.env.ANTHROPIC_API_KEY = "test-key"; clearIntegrationCache();
   apiReply = { body: msg({ content: [{ type: "text", text: JSON.stringify(aiJson) }] }) };
 });
 
@@ -114,9 +115,9 @@ describe("POST /api/import/preview", () => {
   });
 
   it("sin clave de IA responde 503; al llegar al límite del plan responde 429 y NO llama a la API", async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY; clearIntegrationCache();
     expect((await POST(form({ mode: "text", account_id: "acc1", text: "x" }))).status).toBe(503);
-    process.env.ANTHROPIC_API_KEY = "test-key";
+    process.env.ANTHROPIC_API_KEY = "test-key"; clearIntegrationCache();
     adminCount = 3;
     const res = await POST(form({ mode: "text", account_id: "acc1", text: "x" }));
     expect(res.status).toBe(429);

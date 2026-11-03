@@ -23,12 +23,13 @@ export default async function Integraciones({ searchParams }: { searchParams: Pr
     wompi: [{ label: "URL de eventos (configúrala en Wompi → Desarrolladores)", value: `${base}/api/wompi/webhook` }],
     google: [{ label: "URI de redirección autorizada", value: `${base}/api/email/google/callback` }],
     microsoft: [{ label: "URI de redirección", value: `${base}/api/email/microsoft/callback` }],
+    anthropic: [],
   };
 
   return (
     <div className="space-y-4">
       <div><h1 className="text-xl font-bold lg:text-2xl">Integraciones</h1>
-        <p className="text-sm text-muted">Credenciales de Wompi, Google y Microsoft. Los secretos se guardan cifrados y no se vuelven a mostrar completos. Si un campo no tiene valor aquí, se usa la variable de entorno del despliegue.</p></div>
+        <p className="text-sm text-muted">Credenciales de Anthropic (IA), Wompi, Google y Microsoft. Los secretos se guardan cifrados y no se vuelven a mostrar completos. Si un campo no tiene valor aquí, se usa la variable de entorno del despliegue.</p></div>
 
       {sp.ok && <p role="status" className="rounded-xl bg-brand-soft px-3 py-2 text-sm text-brand">Cambios guardados. Se aplican en segundos, sin volver a desplegar.</p>}
       {sp.error && <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">{sp.error}</p>}
@@ -46,20 +47,24 @@ export default async function Integraciones({ searchParams }: { searchParams: Pr
                 <div><h2 className="font-semibold">{prov.name}</h2><p className="text-sm text-muted">{prov.description}</p></div>
                 {st && <Badge tone={st.ready ? "good" : "warn"}>{st.ready ? "Configurada" : "Incompleta"}</Badge>}
               </div>
-              {urls[prov.id].map((u) => (
+              {(urls[prov.id] ?? []).map((u) => (
                 <div key={u.value} className="rounded-lg bg-card-2 px-3 py-2"><p className="text-xs text-muted">{u.label}</p><p className="break-all font-mono text-xs">{u.value}</p></div>
               ))}
               <form action={saveIntegrationAction} className="space-y-3" autoComplete="off">
                 <input type="hidden" name="provider" value={prov.id} />
-                {(st?.fields ?? prov.fields.map((f) => ({ ...f, source: "none" as Source, preview: undefined as string | undefined, error: undefined as string | undefined }))).map((f) => (
+                {(st?.fields ?? prov.fields.map((f) => ({ ...f, source: "none" as Source, preview: undefined as string | undefined, error: undefined as string | undefined }))).map((f) => {
+                  const opts = prov.fields.find((d) => d.key === f.key)?.options;
+                  return (
                   <div key={f.key}>
                     <div className="mb-1 flex items-center justify-between gap-2"><Label>{f.label}</Label><Badge tone={SOURCE[f.source].tone}>{SOURCE[f.source].label}</Badge></div>
-                    <Input name={f.key} type={f.secret ? "password" : "text"} autoComplete="off" spellCheck={false} className="font-mono text-sm"
+                    <Input name={f.key} type={f.secret ? "password" : "text"} autoComplete="off" spellCheck={false} className="font-mono text-sm" list={opts ? `opts-${prov.id}-${f.key}` : undefined}
                       placeholder={f.preview ? (f.secret ? `${f.preview} · escribe para reemplazar` : f.preview) : (f.placeholder ?? "")} defaultValue={!f.secret && f.source === "panel" ? f.preview : undefined} />
+                    {opts && <datalist id={`opts-${prov.id}-${f.key}`}>{opts.map((o) => <option key={o} value={o} />)}</datalist>}
                     {f.help && <p className="mt-1 text-xs text-muted">{f.help}</p>}
                     {f.error && <p className="mt-1 text-xs text-danger">{f.error}</p>}
                   </div>
-                ))}
+                  );
+                })}
                 <Button className="w-full">Guardar {prov.name}</Button>
               </form>
               {st?.fields.some((f) => f.source === "panel") && (

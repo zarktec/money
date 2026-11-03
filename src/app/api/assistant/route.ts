@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayISO } from "@/lib/dates";
-import { aiModel, type AiClient } from "@/lib/ai/extract";
+import { getAnthropic } from "@/lib/ai/client";
 import { aiQuota, recordAiUsage } from "@/lib/ai/usage";
 import { runAssistant } from "@/lib/assistant/run";
 
@@ -23,7 +23,8 @@ export async function POST(req: Request) {
 
   const parsed = body.safeParse(await req.json().catch(() => null));
   if (!parsed.success || parsed.data.messages.at(-1)?.role !== "user") return fail("Escribe una pregunta (máximo 2.000 caracteres).", 400);
-  if (!process.env.ANTHROPIC_API_KEY) return fail("El asistente aún no está configurado.", 503);
+  const ai = await getAnthropic();
+  if (!ai) return fail("El asistente aún no está configurado.", 503);
 
   const admin = createAdminClient();
   const quota = await aiQuota(admin, user.id);
@@ -33,8 +34,8 @@ export async function POST(req: Request) {
   const all = parsed.data.messages, question = all.at(-1)!.content;
   const history = all.slice(0, -1).slice(-6);
   try {
-    const r = await runAssistant(new Anthropic() as unknown as AiClient, { db: supabase, today: todayISO() }, history, question);
-    await recordAiUsage(admin, user.id, "assistant", r.inputTokens, r.outputTokens, aiModel());
+    const r = await runAssistant(ai.client, { db: supabase, today: todayISO() }, history, question);
+    await recordAiUsage(admin, user.id, "assistant", r.inputTokens, r.outputTokens, ai.model);
     return NextResponse.json({ reply: r.reply, usage: { used: quota.used + 1, limit: quota.limit } });
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) return fail("El servicio de IA está muy ocupado. Inténtalo en un minuto.", 503);

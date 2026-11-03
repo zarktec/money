@@ -11,13 +11,14 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { g
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => adminDb }));
 vi.mock("@/lib/assistant/run", () => ({ runAssistant: (...a: unknown[]) => run(...a) }));
 const { POST } = await import("./route");
+const { clearIntegrationCache } = await import("@/lib/integrations/store");   // la clave de IA se lee con una caché corta: se limpia al cambiar el entorno
 
 const req = (body: unknown) => new Request("http://x/api/assistant", { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body) });
 const q = (text: string) => ({ role: "user", content: text });
 const err = (Cls: any) => Object.assign(Object.create(Cls.prototype), { status: 429, message: "detalle-interno-secreto" });
 
 beforeEach(() => {
-  user = { id: "u1" }; process.env.ANTHROPIC_API_KEY = "k";
+  user = { id: "u1" }; process.env.ANTHROPIC_API_KEY = "k"; clearIntegrationCache();
   adminDb = fakeDb({ subscriptions: [], plans: [{ code: "free", limits: { ai_requests_month: 5 } }], ai_usage: [] });
   run.mockReset(); run.mockResolvedValue({ reply: "Gastaste $295.000.", toolCalls: 1, inputTokens: 120, outputTokens: 30, hitLimit: false });
 });
@@ -26,7 +27,7 @@ describe("POST /api/assistant", () => {
   it("sin sesión → 401; sin clave de IA → 503", async () => {
     user = null;
     expect((await POST(req({ messages: [q("hola")] }))).status).toBe(401);
-    user = { id: "u1" }; delete process.env.ANTHROPIC_API_KEY;
+    user = { id: "u1" }; delete process.env.ANTHROPIC_API_KEY; clearIntegrationCache();
     expect((await POST(req({ messages: [q("hola")] }))).status).toBe(503);
     expect(run).not.toHaveBeenCalled();
   });

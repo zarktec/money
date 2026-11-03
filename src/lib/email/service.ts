@@ -1,10 +1,10 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getIntegration } from "@/lib/integrations/store";
 import { todayISO } from "@/lib/dates";
-import { aiModel, extractTransactions, type AiClient } from "@/lib/ai/extract";
+import { extractTransactions } from "@/lib/ai/extract";
+import { getAnthropic } from "@/lib/ai/client";
 import { aiQuota, recordAiUsage } from "@/lib/ai/usage";
 import type { MerchantRule } from "@/lib/imports/categorize";
 import { decryptSecret, encryptSecret } from "./crypto";
@@ -70,7 +70,8 @@ export async function runSync(connectionId: string, opts: { maxList?: number; ma
   const db = opts.db ?? createAdminClient();
   const { data: c } = await db.from("email_connections").select("id, user_id, provider, email, secret_encrypted, default_account_id, last_sync_at, active").eq("id", connectionId).maybeSingle();
   if (!c || !c.active) return { skipped: "inactiva" };
-  if (!process.env.ANTHROPIC_API_KEY) return { skipped: "IA no configurada" };
+  const ai = await getAnthropic();
+  if (!ai) return { skipped: "IA no configurada" };
 
   let provider: MailProvider;
   try { provider = await buildProvider(c as ConnRow); }
@@ -80,14 +81,13 @@ export async function runSync(connectionId: string, opts: { maxList?: number; ma
     throw e;
   }
 
-  const client = new Anthropic() as unknown as AiClient;
   const ctx = await loadSyncContext(db, c.user_id);
   return syncMailbox({
     db, provider, now: new Date(),
-    extract: (input) => extractTransactions(client, input),
+    extract: (input) => extractTransactions(ai.client, input),
     quota: {
       remaining: async () => { const q = await aiQuota(db, c.user_id); return Math.max(q.limit - q.used, 0); },
-      record: (i, o) => recordAiUsage(db, c.user_id, "email", i, o, aiModel()),
+      record: (i, o) => recordAiUsage(db, c.user_id, "email", i, o, ai.model),
     },
   }, c as ConnRow, ctx, { maxList: opts.maxList ?? 60, maxAi: opts.maxAi ?? 10, deadline: opts.deadline });
 }

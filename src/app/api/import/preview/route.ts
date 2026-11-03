@@ -8,7 +8,8 @@ import { mapStatement } from "@/lib/imports/statement";
 import { categorizeByMerchants, type MerchantRule } from "@/lib/imports/categorize";
 import { hashAll } from "@/lib/imports/dedupe";
 import type { DraftRow, ImportMode } from "@/lib/imports/types";
-import { AiError, aiModel, extractTransactions, type AiClient, type ExtractInput } from "@/lib/ai/extract";
+import { AiError, extractTransactions, type ExtractInput } from "@/lib/ai/extract";
+import { getAnthropic } from "@/lib/ai/client";
 import { toDrafts } from "@/lib/ai/schema";
 import { aiQuota, recordAiUsage } from "@/lib/ai/usage";
 
@@ -85,16 +86,16 @@ export async function POST(req: Request) {
       input = { mode: "statement", pdfBase64: buf.toString("base64"), today, categories: catNames };
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) return fail("La lectura con IA aún no está configurada.", 503);
+    const ai = await getAnthropic();
+    if (!ai) return fail("La lectura con IA aún no está configurada.", 503);
     const admin = createAdminClient();
     const quota = await aiQuota(admin, user.id);
     usage = { used: quota.used, limit: quota.limit };
     if (!quota.allowed) return fail(`Llegaste al límite de ${quota.limit} análisis con IA de este mes. Mejora tu plan para seguir.`, 429, { usage });
 
     try {
-      const client = new Anthropic() as unknown as AiClient;
-      const r = await extractTransactions(client, input);
-      await recordAiUsage(admin, user.id, source, r.inputTokens, r.outputTokens, aiModel());
+      const r = await extractTransactions(ai.client, input);
+      await recordAiUsage(admin, user.id, source, r.inputTokens, r.outputTokens, ai.model);
       usage = { used: quota.used + 1, limit: quota.limit };
       const d = toDrafts(r.extraction, { today, categories });
       warnings = d.warnings; notes = d.notes;

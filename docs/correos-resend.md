@@ -66,5 +66,5 @@ Además, ejecuta una vez en el SQL Editor de Supabase: `supabase/migrations/0009
 Sin `RESEND_API_KEY` y `MAIL_FROM` los envíos simplemente se omiten.
 
 ## Credenciales de integraciones desde el panel
-Wompi, Google y Microsoft se configuran en **Administración → Integraciones** (`/admin/integraciones`), sin tocar variables de entorno ni volver a desplegar.
+Anthropic (API key y modelo de IA), Wompi, Google y Microsoft se configuran en **Administración → Integraciones** (`/admin/integraciones`), sin tocar variables de entorno ni volver a desplegar.
 Requisitos: ejecutar `supabase/migrations/0010_integration_settings.sql` y tener `TOKEN_ENCRYPTION_KEY` y `SUPABASE_SERVICE_ROLE_KEY` en Vercel.
