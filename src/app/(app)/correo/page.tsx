@@ -6,12 +6,14 @@ import { getFormOptions } from "@/lib/options";
 import { oauthConfig } from "@/lib/email/service";
 import { getPlanLimits, numericLimit } from "@/lib/plan-limits";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SyncButton } from "@/components/sync-button";
+import { syncText } from "@/lib/email/sync-feedback";
 import { disconnectEmail, setConnectionAccount, syncNow } from "../actions-email";
 
 export const metadata = { title: "Correo" };
 const LABEL = { gmail: "Gmail", outlook: "Outlook", imap: "IMAP" } as const;
 
-export default async function Correo({ searchParams }: { searchParams: Promise<{ conectado?: string; error?: string }> }) {
+export default async function Correo({ searchParams }: { searchParams: Promise<{ conectado?: string; error?: string; sync?: string; n?: string; i?: string }> }) {
   const sp = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -32,6 +34,8 @@ export default async function Correo({ searchParams }: { searchParams: Promise<{
     <div className="space-y-4">
       <header><h1 className="text-2xl font-bold">Correo</h1><p className="text-sm text-muted">Detecta compras, cobros y pagos en tu correo y los deja para que los revises.</p></header>
       {sp.conectado && <p className="rounded-xl bg-brand/10 px-3 py-2 text-sm text-brand">¡Cuenta conectada! La primera lectura se hace en la próxima sincronización, o toca «Sincronizar ahora».</p>}
+      {(() => { const f = sp.sync ? syncText(sp.sync, Number(sp.n) || 0, Number(sp.i) || 0) : null;
+        return f && <p role={f.tone === "ok" ? "status" : "alert"} className={`rounded-xl px-3 py-2 text-sm ${f.tone === "ok" ? "bg-brand-soft text-brand" : f.tone === "warn" ? "bg-warn-soft text-warn" : "bg-danger-soft text-danger"}`}>{f.text}</p>; })()}
       {sp.error && <p role="alert" className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{sp.error}</p>}
 
       {(conns ?? []).map((c) => {
@@ -50,7 +54,7 @@ export default async function Correo({ searchParams }: { searchParams: Promise<{
             </form>
             <p className="text-xs text-muted">Cuenta actual: {accountName(c.default_account_id)}. Si el banco que envía el correo coincide con una de tus cuentas, se usa esa.</p>
             <div className="flex gap-2">
-              {c.active && <form action={syncNow}><input type="hidden" name="id" value={c.id} /><button className="h-10 rounded-lg bg-brand px-4 text-sm font-semibold text-brand-fg">Sincronizar ahora</button></form>}
+              {c.active && <form action={syncNow}><input type="hidden" name="id" value={c.id} /><SyncButton /></form>}
               <form action={disconnectEmail}><input type="hidden" name="id" value={c.id} /><button className="h-10 rounded-lg px-3 text-sm text-danger">Desconectar y borrar acceso</button></form>
             </div>
           </Card>

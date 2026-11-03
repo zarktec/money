@@ -9,6 +9,7 @@ import { ImapProvider } from "@/lib/email/providers/imap";
 import { ProviderAuthError } from "@/lib/email/providers/types";
 import { decryptSecret } from "@/lib/email/crypto";
 import { runSync, sealSecret, secretAad } from "@/lib/email/service";
+import { syncFeedback } from "@/lib/email/sync-feedback";
 import { type FormState } from "@/lib/forms/schemas";
 import { nextOccurrence } from "@/lib/finance/recurrence";
 
@@ -67,8 +68,11 @@ export async function syncNow(fd: FormData) {
   const { supabase } = await ctx();
   const c = await ownConnection(supabase, String(fd.get("id")));
   if (!c) return;
-  try { await runSync(c.id, { maxAi: 15, deadline: Date.now() + 45_000 }); } catch { /* el motor ya anotó last_error */ }
+  let fb;
+  try { fb = syncFeedback(await runSync(c.id, { maxAi: 15, deadline: Date.now() + 45_000 })); }
+  catch (e) { fb = syncFeedback(e instanceof Error ? e : new Error("sync")); }   // el motor ya anotó last_error
   refresh();
+  redirect(`/correo?sync=${fb.code}&n=${fb.n ?? 0}&i=${fb.i ?? 0}`);
 }
 
 export async function setConnectionAccount(fd: FormData) {
